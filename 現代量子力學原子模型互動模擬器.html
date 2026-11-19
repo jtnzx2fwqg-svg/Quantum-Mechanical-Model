@@ -1,0 +1,3647 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>現代量子力學原子模型互動模擬器 | Quantum Mechanical Model</title>
+    <style>
+        /* =========================================================
+           1. Apple HIG Design Tokens & Base Reset (Zero Dependencies)
+           ========================================================= */
+        :root {
+            --bg-page: #F5F5F7;
+            --bg-card: #FFFFFF;
+            --bg-subcard: #F2F2F7;
+            --bg-subtle: #F9F9FB;
+            --bg-canvas: #F7F9FC;
+
+            --text-primary: #1D1D1F;
+            --text-secondary: #6E6E73;
+            --text-tertiary: #86868B;
+
+            --accent-blue: #0071E3;
+            --accent-blue-hover: #0077ED;
+            --accent-blue-soft: rgba(0, 113, 227, 0.10);
+            --accent-blue-border: rgba(0, 113, 227, 0.28);
+
+            --color-proton: #E53935;
+            --color-proton-soft: rgba(229, 57, 53, 0.10);
+            --color-neutron: #0097A7;
+            --color-neutron-soft: rgba(0, 151, 167, 0.10);
+            --color-electron: #0071E3;
+            --color-s: #0071E3;
+            --color-p: #5856D6;
+            --color-d: #F57C00;
+            --color-f: #9C27B0;
+
+            --color-success: #248A3D;
+            --color-success-soft: rgba(36, 138, 61, 0.10);
+            --color-warn: #B25000;
+            --color-warn-soft: rgba(245, 124, 0, 0.12);
+            --color-danger: #C62828;
+            --color-danger-soft: rgba(229, 57, 53, 0.10);
+
+            --border-hairline: 1px solid rgba(0, 0, 0, 0.08);
+            --border-strong: 1px solid rgba(0, 0, 0, 0.14);
+            --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.04);
+            --shadow-btn: 0 1px 2px rgba(0, 0, 0, 0.05);
+
+            --radius-card: 18px;
+            --radius-sub: 12px;
+            --radius-btn: 10px;
+            --radius-pill: 999px;
+
+            --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+            --font-mono: "SF Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            max-width: 100%;
+            overflow-x: hidden;
+            background-color: var(--bg-page);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            font-size: 15px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-size-adjust: 100%;
+        }
+
+        button, input, select {
+            font-family: inherit;
+            color: inherit;
+        }
+
+        button {
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        button:disabled {
+            opacity: 0.42;
+            cursor: not-allowed;
+        }
+
+        /* =========================================================
+           2. Page Shell & Safe-Area Support (iPhone Safari Friendly)
+           ========================================================= */
+        .app-shell {
+            width: 100%;
+            max-width: 1440px;
+            margin: 0 auto;
+            padding-top: max(16px, env(safe-area-inset-top));
+            padding-left: max(14px, env(safe-area-inset-left));
+            padding-right: max(14px, env(safe-area-inset-right));
+            padding-bottom: max(28px, env(safe-area-inset-bottom));
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        @media (min-width: 768px) {
+            .app-shell {
+                padding-top: max(20px, env(safe-area-inset-top));
+                padding-left: max(22px, env(safe-area-inset-left));
+                padding-right: max(22px, env(safe-area-inset-right));
+                gap: 20px;
+            }
+        }
+
+        /* =========================================================
+           3. Header & Quick Presets (Normal Flow — Never Covers Content)
+           ========================================================= */
+        .app-header {
+            background-color: var(--bg-card);
+            border: var(--border-hairline);
+            border-radius: var(--radius-card);
+            box-shadow: var(--shadow-card);
+            padding: 18px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            min-width: 0;
+        }
+
+        .header-top {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .header-brand {
+            min-width: 0;
+            flex: 1 1 260px;
+        }
+
+        .header-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent-blue);
+            background-color: var(--accent-blue-soft);
+            padding: 3px 10px;
+            border-radius: var(--radius-pill);
+            margin-bottom: 6px;
+        }
+
+        .header-title {
+            margin: 0;
+            font-size: clamp(20px, 2.4vw, 26px);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+            line-height: 1.25;
+            overflow-wrap: anywhere;
+        }
+
+        .header-subtitle {
+            margin: 4px 0 0 0;
+            font-size: 13.5px;
+            color: var(--text-secondary);
+            overflow-wrap: anywhere;
+        }
+
+        .header-actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .presets-bar {
+            padding-top: 12px;
+            border-top: var(--border-hairline);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .presets-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        /* =========================================================
+           4. Main Responsive Grid (Desktop 2-Col / Mobile 1-Col)
+           ========================================================= */
+        .workspace-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 20px;
+            align-items: start;
+        }
+
+        @media (min-width: 1024px) {
+            .workspace-grid {
+                grid-template-columns: minmax(340px, 410px) minmax(0, 1fr);
+            }
+        }
+
+        .col-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-width: 0;
+        }
+
+        /* =========================================================
+           5. Apple Card & Typography Helpers
+           ========================================================= */
+        .card {
+            background-color: var(--bg-card);
+            border: var(--border-hairline);
+            border-radius: var(--radius-card);
+            box-shadow: var(--shadow-card);
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            min-width: 0;
+        }
+
+        @media (min-width: 768px) {
+            .card {
+                padding: 20px;
+            }
+        }
+
+        .subcard {
+            background-color: var(--bg-subtle);
+            border: var(--border-hairline);
+            border-radius: var(--radius-sub);
+            padding: 12px 14px;
+            min-width: 0;
+        }
+
+        .card-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .card-title-group {
+            min-width: 0;
+            flex: 1 1 200px;
+        }
+
+        .card-title {
+            margin: 0;
+            font-size: 16.5px;
+            font-weight: 700;
+            letter-spacing: -0.015em;
+            color: var(--text-primary);
+            line-height: 1.3;
+            overflow-wrap: anywhere;
+        }
+
+        .card-desc {
+            margin: 3px 0 0 0;
+            font-size: 12.5px;
+            color: var(--text-secondary);
+            overflow-wrap: anywhere;
+        }
+
+        .mono {
+            font-family: var(--font-mono);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .wrap-text {
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
+        /* =========================================================
+           6. Buttons & Interactive Controls (Min 40px Touch Targets)
+           ========================================================= */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            min-height: 40px;
+            padding: 8px 13px;
+            border-radius: var(--radius-btn);
+            border: var(--border-strong);
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.25;
+            text-align: center;
+            box-shadow: var(--shadow-btn);
+            transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.08s ease;
+            white-space: normal;
+            overflow-wrap: anywhere;
+        }
+
+        .btn:hover:not(:disabled) {
+            background-color: var(--bg-subcard);
+        }
+
+        .btn:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background-color: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: #FFFFFF;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: var(--accent-blue-hover);
+            border-color: var(--accent-blue-hover);
+        }
+
+        .btn-soft {
+            background-color: var(--bg-subcard);
+            border-color: transparent;
+            color: var(--text-primary);
+            box-shadow: none;
+        }
+
+        .btn-soft:hover:not(:disabled) {
+            background-color: #E5E5EA;
+        }
+
+        .btn-active {
+            background-color: var(--accent-blue-soft);
+            border-color: var(--accent-blue-border);
+            color: var(--accent-blue);
+        }
+
+        .btn-active:hover:not(:disabled) {
+            background-color: rgba(0, 113, 227, 0.16);
+        }
+
+        .btn-warn {
+            background-color: var(--color-warn-soft);
+            border-color: rgba(245, 124, 0, 0.28);
+            color: var(--color-warn);
+        }
+
+        .btn-warn:hover:not(:disabled) {
+            background-color: rgba(245, 124, 0, 0.20);
+        }
+
+        .btn-sm {
+            min-height: 36px;
+            padding: 6px 11px;
+            font-size: 12.5px;
+        }
+
+        /* =========================================================
+           7. Atom / Ion Identity Card (Left Col #1)
+           ========================================================= */
+        .identity-hero {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 14px;
+            background-color: var(--bg-subtle);
+            border: var(--border-hairline);
+            border-radius: 14px;
+            padding: 14px;
+            min-width: 0;
+        }
+
+        .nuclide-badge {
+            flex-shrink: 0;
+            min-width: 96px;
+            padding: 10px 14px;
+            background-color: var(--bg-card);
+            border: var(--border-strong);
+            border-radius: 14px;
+            box-shadow: var(--shadow-btn);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+        }
+
+        .nuclide-left {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: space-between;
+            line-height: 1.1;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .nuclide-mass {
+            color: var(--text-primary);
+        }
+
+        .nuclide-z {
+            color: var(--color-proton);
+            margin-top: 6px;
+        }
+
+        .nuclide-sym {
+            font-size: 32px;
+            font-weight: 700;
+            line-height: 1;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+        }
+
+        .nuclide-charge {
+            align-self: flex-start;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            font-weight: 700;
+            line-height: 1;
+            margin-top: 2px;
+        }
+
+        .identity-titles {
+            flex: 1 1 170px;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .identity-name-cn {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.25;
+            overflow-wrap: anywhere;
+        }
+
+        .identity-name-en {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            line-height: 1.3;
+            overflow-wrap: anywhere;
+        }
+
+        .identity-iso-line {
+            font-size: 12.5px;
+            color: var(--text-secondary);
+            overflow-wrap: anywhere;
+        }
+
+        .badge-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px;
+            border-radius: var(--radius-pill);
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .pill-neutral {
+            background-color: var(--color-success-soft);
+            color: var(--color-success);
+        }
+
+        .pill-cation {
+            background-color: var(--color-proton-soft);
+            color: var(--color-proton);
+        }
+
+        .pill-anion {
+            background-color: var(--accent-blue-soft);
+            color: var(--accent-blue);
+        }
+
+        .pill-invalid {
+            background-color: var(--color-warn-soft);
+            color: var(--color-warn);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        @media (max-width: 360px) {
+            .metrics-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        .metric-cell {
+            background-color: var(--bg-subtle);
+            border: var(--border-hairline);
+            border-radius: 12px;
+            padding: 9px 10px;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .metric-label {
+            font-size: 11.5px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            overflow-wrap: anywhere;
+        }
+
+        .metric-value {
+            font-family: var(--font-mono);
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        .info-callout {
+            background-color: var(--bg-subtle);
+            border: var(--border-hairline);
+            border-left: 3px solid var(--accent-blue);
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 12.5px;
+            color: var(--text-primary);
+            line-height: 1.5;
+            overflow-wrap: anywhere;
+        }
+
+        .info-callout.warn {
+            background-color: var(--color-warn-soft);
+            border-left-color: var(--color-d);
+            color: #7A3800;
+        }
+
+        /* =========================================================
+           8. Element Selector & Particle Controls (Left Col #2)
+           ========================================================= */
+        .selector-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .field-label {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .apple-input, .apple-select {
+            width: 100%;
+            min-height: 42px;
+            padding: 9px 12px;
+            background-color: var(--bg-subtle);
+            border: var(--border-strong);
+            border-radius: var(--radius-btn);
+            font-size: 14px;
+            color: var(--text-primary);
+            outline: none;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+        }
+
+        .apple-input:focus, .apple-select:focus {
+            background-color: var(--bg-card);
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+        }
+
+        @media (max-width: 768px) {
+            .apple-input, .apple-select, .num-input {
+                font-size: 16px;
+            }
+        }
+
+        .particle-card {
+            background-color: var(--bg-subtle);
+            border: var(--border-hairline);
+            border-radius: 14px;
+            padding: 13px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .particle-top {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .particle-title {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 13.5px;
+            font-weight: 700;
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: inline-block;
+        }
+
+        .stepper {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .step-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            border: var(--border-strong);
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            font-size: 18px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-btn);
+        }
+
+        .step-btn:hover {
+            background-color: var(--bg-subcard);
+        }
+
+        .num-input {
+            width: 66px;
+            height: 40px;
+            border-radius: 10px;
+            border: var(--border-strong);
+            background-color: var(--bg-card);
+            text-align: center;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            font-weight: 700;
+            outline: none;
+        }
+
+        .num-input:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+        }
+
+        .particle-footer {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* Apple-Style Touch-Friendly Range Slider */
+        input[type="range"].apple-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 28px;
+            background: transparent;
+            cursor: pointer;
+            margin: 0;
+        }
+
+        input[type="range"].apple-slider:focus {
+            outline: none;
+        }
+
+        input[type="range"].apple-slider::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            border-radius: 999px;
+            background: rgba(0, 0, 0, 0.12);
+        }
+
+        input[type="range"].apple-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #FFFFFF;
+            border: 1.5px solid rgba(0, 0, 0, 0.18);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+            margin-top: -9px;
+            transition: transform 0.12s ease;
+        }
+
+        input[type="range"].apple-slider::-webkit-slider-thumb:active {
+            transform: scale(1.1);
+        }
+
+        input[type="range"].apple-slider::-moz-range-track {
+            width: 100%;
+            height: 6px;
+            border-radius: 999px;
+            background: rgba(0, 0, 0, 0.12);
+        }
+
+        input[type="range"].apple-slider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #FFFFFF;
+            border: 1.5px solid rgba(0, 0, 0, 0.18);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+        }
+
+        /* =========================================================
+           9. 3D Atom Viewer Card (Zero Overlays on Canvas!)
+           ========================================================= */
+        .viewer-info-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background-color: var(--bg-subtle);
+            border: var(--border-hairline);
+            border-radius: 12px;
+            padding: 10px 14px;
+            min-width: 0;
+        }
+
+        .viewer-info-main {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .viewer-mode-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: var(--radius-pill);
+            background-color: var(--accent-blue-soft);
+            color: var(--accent-blue);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .viewer-config-chip {
+            font-family: var(--font-mono);
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--text-primary);
+            background-color: var(--bg-card);
+            border: var(--border-hairline);
+            padding: 3px 9px;
+            border-radius: 8px;
+            overflow-wrap: anywhere;
+        }
+
+        .photon-banner {
+            border-radius: 12px;
+            padding: 10px 14px;
+            background-color: var(--bg-subtle);
+            border: var(--border-hairline);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.45;
+            min-width: 0;
+            overflow-wrap: anywhere;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+
+        .photon-banner.state-excited {
+            background-color: rgba(245, 124, 0, 0.10);
+            border-color: rgba(245, 124, 0, 0.30);
+            color: #7A3800;
+        }
+
+        .photon-banner.state-emit {
+            background-color: rgba(0, 113, 227, 0.10);
+            border-color: rgba(0, 113, 227, 0.30);
+            color: #004999;
+        }
+
+        .photon-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--text-tertiary);
+            flex-shrink: 0;
+        }
+
+        .canvas-stage {
+            width: 100%;
+            height: clamp(280px, 46vw, 440px);
+            background-color: var(--bg-canvas);
+            border: var(--border-hairline);
+            border-radius: 14px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .canvas-stage canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+            cursor: grab;
+        }
+
+        .canvas-stage canvas:active {
+            cursor: grabbing;
+        }
+
+        .sliders-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+
+        .slider-box {
+            background-color: var(--bg-subtle);
+            border: var(--border-hairline);
+            border-radius: 12px;
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 0;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .slider-val {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--accent-blue);
+            font-weight: 700;
+        }
+
+        /* Collapsible Legend Block */
+        details.legend-details {
+            background-color: var(--bg-subtle);
+            border: var(--border-hairline);
+            border-radius: 12px;
+            padding: 10px 14px;
+        }
+
+        details.legend-details summary {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-primary);
+            cursor: pointer;
+            list-style: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 28px;
+        }
+
+        details.legend-details summary::-webkit-details-marker {
+            display: none;
+        }
+
+        details.legend-details summary::after {
+            content: "展開 ▾";
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent-blue);
+        }
+
+        details.legend-details[open] summary::after {
+            content: "收合 ▴";
+        }
+
+        .legend-body {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: var(--border-hairline);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .legend-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 16px;
+            font-size: 12.5px;
+            color: var(--text-primary);
+        }
+
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .science-disclaimer {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            overflow-wrap: anywhere;
+        }
+
+        .canvas-hint-bar {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-align: center;
+            background-color: var(--bg-subcard);
+            border-radius: 10px;
+            padding: 8px 12px;
+            overflow-wrap: anywhere;
+        }
+
+        /* =========================================================
+           10. Orbital Explorer Card
+           ========================================================= */
+        .orbital-controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+        }
+
+        .orbital-row-box {
+            background-color: var(--bg-subtle);
+            border: var(--border-hairline);
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .orient-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
+            gap: 8px;
+        }
+
+        .orient-btn {
+            min-height: 40px;
+            padding: 7px 10px;
+            font-size: 12.5px;
+            width: 100%;
+        }
+
+        .compare-box {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 10px;
+        }
+
+        .compare-item {
+            background-color: var(--bg-subtle);
+            border: var(--border-hairline);
+            border-radius: 12px;
+            padding: 11px 13px;
+            font-size: 12.5px;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
+        }
+
+        /* =========================================================
+           11. Electron Configuration & Orbital Box Diagram Card
+           ========================================================= */
+        .config-readout-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 10px;
+        }
+
+        @media (min-width: 640px) {
+            .config-readout-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        .config-panel {
+            background-color: var(--bg-subtle);
+            border: var(--border-hairline);
+            border-radius: 12px;
+            padding: 12px 14px;
+            min-width: 0;
+        }
+
+        .config-string {
+            margin-top: 4px;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.55;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
+        .valence-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        /* Dedicated Horizontal Scroll Region for Orbital Box Diagram */
+        .box-diagram-wrapper {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            background-color: var(--bg-subtle);
+            border: var(--border-hairline);
+            border-radius: 14px;
+            padding: 14px;
+        }
+
+        .box-diagram-track {
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: flex-end;
+            gap: 14px;
+            min-width: max-content;
+            padding-bottom: 4px;
+        }
+
+        .sublevel-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            background-color: var(--bg-card);
+            border: var(--border-hairline);
+            border-radius: 12px;
+            padding: 10px 10px 8px 10px;
+            flex-shrink: 0;
+        }
+
+        .sublevel-group.is-valence {
+            border-color: var(--accent-blue-border);
+            background-color: rgba(0, 113, 227, 0.04);
+        }
+
+        .sublevel-group.is-excited-target {
+            border-color: rgba(245, 124, 0, 0.45);
+            background-color: rgba(245, 124, 0, 0.06);
+        }
+
+        .sublevel-boxes {
+            display: flex;
+            gap: 4px;
+        }
+
+        .orbital-box {
+            width: 34px;
+            height: 34px;
+            border: 1.5px solid rgba(0, 0, 0, 0.24);
+            border-radius: 7px;
+            background-color: var(--bg-card);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: -1px;
+            user-select: none;
+            flex-shrink: 0;
+        }
+
+        .orbital-box.has-e {
+            border-color: var(--accent-blue);
+            background-color: rgba(0, 113, 227, 0.06);
+        }
+
+        .spin-up {
+            color: var(--accent-blue);
+        }
+
+        .spin-down {
+            color: var(--color-p);
+        }
+
+        .sublevel-label {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .sublevel-tag {
+            font-family: var(--font-sans);
+            font-size: 10px;
+            font-weight: 600;
+            padding: 1px 6px;
+            border-radius: 999px;
+            background-color: var(--bg-subcard);
+            color: var(--text-secondary);
+        }
+
+        .sublevel-group.is-valence .sublevel-tag {
+            background-color: var(--accent-blue-soft);
+            color: var(--accent-blue);
+        }
+
+        /* =========================================================
+           12. Interactive Teaching Labs (Bottom Full-Width)
+           ========================================================= */
+        .labs-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .lab-tab {
+            flex: 1 1 150px;
+            min-height: 42px;
+            padding: 8px 12px;
+            border-radius: 12px;
+            border: var(--border-hairline);
+            background-color: var(--bg-subtle);
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 600;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s ease;
+        }
+
+        .lab-tab:hover {
+            background-color: var(--bg-subcard);
+            color: var(--text-primary);
+        }
+
+        .lab-tab.active {
+            background-color: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: #FFFFFF;
+            box-shadow: 0 2px 8px rgba(0, 113, 227, 0.22);
+        }
+
+        .lab-panel {
+            background-color: var(--bg-subtle);
+            border: var(--border-hairline);
+            border-radius: 14px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            min-width: 0;
+        }
+
+        .lab-panel-title {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            overflow-wrap: anywhere;
+        }
+
+        .lab-panel-desc {
+            margin: 0;
+            font-size: 13.5px;
+            color: var(--text-secondary);
+            line-height: 1.55;
+            overflow-wrap: anywhere;
+        }
+
+        .lab-action-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .lab-action-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
+
+        .spectrum-swatch {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+
+        /* =========================================================
+           13. Footer
+           ========================================================= */
+        .app-footer {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-secondary);
+            padding: 6px 8px;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-shell">
+        <!-- 1. Header & Quick Presets (Normal Flow) -->
+        <header class="app-header">
+            <div class="header-top">
+                <div class="header-brand">
+                    <div class="header-kicker">普通化學教學模擬器 ・ Quantum Mechanical Model</div>
+                    <h1 class="header-title">現代原子模型互動模擬器</h1>
+                    <p class="header-subtitle">依據波動力學模型（Wave Mechanical Model）即時探索原子核、機率電子雲、s / p / d / f 軌域、電子組態與光子能階躍遷</p>
+                </div>
+                <div class="header-actions">
+                    <button id="btnResetAll" type="button" class="btn btn-primary">⟲ 恢復預設值 (¹⁶₈O)</button>
+                </div>
+            </div>
+
+            <div class="presets-bar">
+                <span class="presets-label">教材經典範例快速載入（點擊即時切換原子／離子／例外組態）：</span>
+                <div class="btn-group" id="quickPresetsGroup">
+                    <button type="button" class="btn btn-sm btn-soft" data-preset="8,8,8">¹⁶₈O 氧原子</button>
+                    <button type="button" class="btn btn-sm btn-soft" data-preset="8,8,10">¹⁶₈O²⁻ 氧離子</button>
+                    <button type="button" class="btn btn-sm btn-soft" data-preset="8,9,10">¹⁷₈O²⁻ 氧同位素離子</button>
+                    <button type="button" class="btn btn-sm btn-soft" data-preset="11,12,10">²³₁₁Na⁺ 鈉離子</button>
+                    <button type="button" class="btn btn-sm btn-soft" data-preset="17,18,18">³⁵₁₇Cl⁻ 氯離子</button>
+                    <button type="button" class="btn btn-sm btn-soft" data-preset="1,0,1">¹₁H 氫原子</button>
+                    <button type="button" class="btn btn-sm btn-soft" data-preset="24,28,24">⁵²₂₄Cr 鉻 (例外)</button>
+                    <button type="button" class="btn btn-sm btn-soft" data-preset="29,34,29">⁶³₂₉Cu 銅 (例外)</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 2. Main Workspace Grid -->
+        <main class="workspace-grid">
+            <!-- LEFT COLUMN: Identity Card + Element & Particle Controls -->
+            <div class="col-stack">
+                <!-- Card A: Current Atom / Ion Identity -->
+                <section class="card" aria-label="目前原子與離子即時身分辨識">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <h2 class="card-title">目前原子／離子即時辨識</h2>
+                            <p class="card-desc">調整任一粒子數量，立即自動運算元素、同位素與離子電荷</p>
+                        </div>
+                    </div>
+
+                    <div class="identity-hero">
+                        <div class="nuclide-badge" aria-label="標準化學符號">
+                            <div class="nuclide-left">
+                                <span id="symMass" class="nuclide-mass">16</span>
+                                <span id="symZ" class="nuclide-z">8</span>
+                            </div>
+                            <span id="symElement" class="nuclide-sym">O</span>
+                            <span id="symCharge" class="nuclide-charge"></span>
+                        </div>
+                        <div class="identity-titles">
+                            <div id="idNameCn" class="identity-name-cn">氧原子</div>
+                            <div id="idNameEn" class="identity-name-en">Oxygen</div>
+                            <div id="idIsotope" class="identity-iso-line">同位素：Oxygen-16（氧-16）</div>
+                            <div class="badge-row">
+                                <span id="idTypeBadge" class="status-pill pill-neutral">中性原子 Neutral Atom</span>
+                                <span id="idChargeBadge" class="status-pill pill-neutral mono">電荷：0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="metrics-grid">
+                        <div class="metric-cell">
+                            <span class="metric-label">原子序 (Z)</span>
+                            <span id="valZ" class="metric-value">8</span>
+                        </div>
+                        <div class="metric-cell">
+                            <span class="metric-label">質量數 (A)</span>
+                            <span id="valA" class="metric-value">16</span>
+                        </div>
+                        <div class="metric-cell">
+                            <span class="metric-label">淨電荷 (q)</span>
+                            <span id="valQ" class="metric-value">0</span>
+                        </div>
+                        <div class="metric-cell">
+                            <span class="metric-label" style="color: var(--color-proton);">● 質子數 p⁺</span>
+                            <span id="valP" class="metric-value" style="color: var(--color-proton);">8</span>
+                        </div>
+                        <div class="metric-cell">
+                            <span class="metric-label" style="color: var(--color-neutron);">● 中子數 n⁰</span>
+                            <span id="valN" class="metric-value" style="color: var(--color-neutron);">8</span>
+                        </div>
+                        <div class="metric-cell">
+                            <span class="metric-label" style="color: var(--color-electron);">● 電子數 e⁻</span>
+                            <span id="valE" class="metric-value" style="color: var(--color-electron);">8</span>
+                        </div>
+                    </div>
+
+                    <div id="identityNote" class="info-callout">
+                        質子數 Z = 8 決定此元素為氧（Oxygen）；質量數 A = 8 + 8 = 16；淨電荷 q = 8 − 8 = 0，為電中性原子。
+                    </div>
+                </section>
+
+                <!-- Card B: Element Selector & Particle Parameter Controls -->
+                <section class="card" aria-label="元素選擇器與粒子數量調整">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <h2 class="card-title">元素選擇與粒子調整</h2>
+                            <p class="card-desc">完整支援週期表 118 種元素，或手動自由增減質子、中子與電子</p>
+                        </div>
+                    </div>
+
+                    <!-- Element Search & Select -->
+                    <div class="selector-group">
+                        <label for="elementSearch" class="field-label">快速篩選週期表 118 種元素（可輸入中文、英文、符號或原子序）：</label>
+                        <input id="elementSearch" type="text" class="apple-input" placeholder="例如：氧、Oxygen、O、24、Cr、金..." autocomplete="off">
+                        <label for="elementSelect" class="field-label">選擇元素（自動建立預設中性原子）：</label>
+                        <select id="elementSelect" class="apple-select"></select>
+                    </div>
+
+                    <!-- Proton Control -->
+                    <div class="particle-card">
+                        <div class="particle-top">
+                            <label for="sliderP" class="particle-title" style="color: var(--color-proton);">
+                                <span class="dot" style="background-color: var(--color-proton);"></span>
+                                <span>質子數 Protons (決定元素 Z)</span>
+                            </label>
+                            <div class="stepper">
+                                <button type="button" class="step-btn" data-step="p:-1" aria-label="減少 1 個質子">−</button>
+                                <input id="inputP" type="number" class="num-input" min="0" max="118" value="8" aria-label="質子數輸入">
+                                <button type="button" class="step-btn" data-step="p:1" aria-label="增加 1 個質子">+</button>
+                            </div>
+                        </div>
+                        <input id="sliderP" type="range" class="apple-slider" min="0" max="118" value="8" aria-label="質子數滑桿">
+                        <div class="particle-footer">
+                            <span class="wrap-text">改變質子數會改變元素種類（支援 1～118 號元素，0 則無對應元素）</span>
+                        </div>
+                    </div>
+
+                    <!-- Neutron Control -->
+                    <div class="particle-card">
+                        <div class="particle-top">
+                            <label for="sliderN" class="particle-title" style="color: var(--color-neutron);">
+                                <span class="dot" style="background-color: var(--color-neutron);"></span>
+                                <span>中子數 Neutrons (決定同位素 A)</span>
+                            </label>
+                            <div class="stepper">
+                                <button type="button" class="step-btn" data-step="n:-1" aria-label="減少 1 個中子">−</button>
+                                <input id="inputN" type="number" class="num-input" min="0" max="180" value="8" aria-label="中子數輸入">
+                                <button type="button" class="step-btn" data-step="n:1" aria-label="增加 1 個中子">+</button>
+                            </div>
+                        </div>
+                        <input id="sliderN" type="range" class="apple-slider" min="0" max="180" value="8" aria-label="中子數滑桿">
+                        <div class="particle-footer">
+                            <span class="wrap-text">改變中子數不改變元素種類，僅改變同位素與質量數</span>
+                            <button id="btnStdIso" type="button" class="btn btn-sm">設為常見穩定同位素</button>
+                        </div>
+                    </div>
+
+                    <!-- Electron Control -->
+                    <div class="particle-card">
+                        <div class="particle-top">
+                            <label for="sliderE" class="particle-title" style="color: var(--color-electron);">
+                                <span class="dot" style="background-color: var(--color-electron);"></span>
+                                <span>電子數 Electrons (決定離子電荷 q)</span>
+                            </label>
+                            <div class="stepper">
+                                <button type="button" class="step-btn" data-step="e:-1" aria-label="減少 1 個電子">−</button>
+                                <input id="inputE" type="number" class="num-input" min="0" max="120" value="8" aria-label="電子數輸入">
+                                <button type="button" class="step-btn" data-step="e:1" aria-label="增加 1 個電子">+</button>
+                            </div>
+                        </div>
+                        <input id="sliderE" type="range" class="apple-slider" min="0" max="120" value="8" aria-label="電子數滑桿">
+                        <div class="particle-footer">
+                            <span class="wrap-text">失電子成陽離子 (Cation)；得電子成陰離子 (Anion)</span>
+                            <button id="btnMakeNeutral" type="button" class="btn btn-sm">設為中性原子</button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- RIGHT COLUMN: 3D Viewer + Orbital Explorer + Electron Config & Box Diagram -->
+            <div class="col-stack">
+                <!-- Card C: 3D Atom Model Viewer (Strictly Zero Overlays!) -->
+                <section class="card" aria-label="3D 現代原子模型視窗">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <h2 class="card-title">3D 波動力學原子模型視窗</h2>
+                            <p class="card-desc">以三維機率密度點雲與 90% 邊界呈現電子雲（非波耳圓形軌道）</p>
+                        </div>
+                    </div>
+
+                    <!-- 1. Top Independent Status Info Bar -->
+                    <div class="viewer-info-bar">
+                        <div class="viewer-info-main">
+                            <span id="viewerModeBadge" class="viewer-mode-tag">完整原子電子雲</span>
+                            <strong id="viewerAtomTitle" class="wrap-text">氧原子 Oxygen-16（¹⁶₈O）</strong>
+                        </div>
+                        <span id="viewerConfigChip" class="viewer-config-chip">1s² 2s² 2p⁴</span>
+                    </div>
+
+                    <!-- 2. Independent Photon Transition Notification Area -->
+                    <div id="photonBanner" class="photon-banner" role="status" aria-live="polite">
+                        <span id="photonDot" class="photon-dot"></span>
+                        <span id="photonText" class="wrap-text"><strong>基態（Ground State）：</strong>所有電子位於可用最低能量軌域。可點擊下方「吸收能量 → 激發態」或實驗 6 觀察光子吸收與放射躍遷。</span>
+                    </div>
+
+                    <!-- 3. Pure 3D Canvas Stage (NO Absolute Overlays!) -->
+                    <div id="canvasStage" class="canvas-stage">
+                        <canvas id="atomCanvas" aria-label="互動式 3D 原子模型畫布"></canvas>
+                    </div>
+
+                    <!-- 4. Independent Control Row -->
+                    <div class="btn-group">
+                        <button id="btnModeAtom" type="button" class="btn btn-sm btn-active">完整原子電子雲</button>
+                        <button id="btnModeOrbital" type="button" class="btn btn-sm">單一軌域 3D 形狀</button>
+                        <button id="btnToggleBoundary" type="button" class="btn btn-sm btn-active">✓ 90% 機率邊界</button>
+                        <button id="btnToggleSlice" type="button" class="btn btn-sm">◐ 剖面觀察</button>
+                        <button id="btnToggleRotate" type="button" class="btn btn-sm btn-active">↻ 自動旋轉</button>
+                        <button id="btnZoomOut" type="button" class="btn btn-sm">− 縮小</button>
+                        <button id="btnZoomIn" type="button" class="btn btn-sm">+ 放大</button>
+                        <button id="btnResetView" type="button" class="btn btn-sm">⟲ 重設視角</button>
+                    </div>
+
+                    <!-- Sliders Row -->
+                    <div class="sliders-grid">
+                        <div class="slider-box">
+                            <div class="slider-header">
+                                <label for="sliderCloud">電子雲顯示強度</label>
+                                <span id="lblCloud" class="slider-val">75%</span>
+                            </div>
+                            <input id="sliderCloud" type="range" class="apple-slider" min="15" max="100" value="75">
+                        </div>
+                        <div class="slider-box">
+                            <div class="slider-header">
+                                <label for="sliderZoom">模型縮放倍率</label>
+                                <span id="lblZoom" class="slider-val">1.0x</span>
+                            </div>
+                            <input id="sliderZoom" type="range" class="apple-slider" min="50" max="220" value="100">
+                        </div>
+                        <div class="slider-box">
+                            <div class="slider-header">
+                                <label for="sliderNucleus">原子核視覺比例</label>
+                                <span id="lblNucleus" class="slider-val">1.0x</span>
+                            </div>
+                            <input id="sliderNucleus" type="range" class="apple-slider" min="50" max="200" value="100">
+                        </div>
+                    </div>
+
+                    <!-- 5. Collapsible Independent Legend & Scientific Notes -->
+                    <details class="legend-details" open>
+                        <summary>圖例與波動力學科學標註</summary>
+                        <div class="legend-body">
+                            <div class="legend-items">
+                                <span class="legend-item"><span class="dot" style="background: var(--color-proton);"></span>質子 (p⁺)</span>
+                                <span class="legend-item"><span class="dot" style="background: var(--color-neutron);"></span>中子 (n⁰)</span>
+                                <span class="legend-item"><span class="dot" style="background: var(--color-s);"></span>s 軌域 (球形)</span>
+                                <span class="legend-item"><span class="dot" style="background: var(--color-p);"></span>p 軌域 (雙瓣形)</span>
+                                <span class="legend-item"><span class="dot" style="background: var(--color-d);"></span>d 軌域 (五種形狀)</span>
+                                <span class="legend-item"><span class="dot" style="background: var(--color-f);"></span>f 軌域 (七種複雜形狀)</span>
+                                <span class="legend-item"><span class="dot" style="background: transparent; border: 1.5px dashed var(--accent-blue);"></span>90% 機率邊界示意</span>
+                            </div>
+                            <div class="science-disclaimer">
+                                <strong>科學正確性說明：</strong>
+                                (1) <strong>非實際尺寸比例：</strong>真實原子核直徑僅約原子的 1/100,000，此處為教學觀察需要而放大原子核。
+                                (2) <strong>機率分布概念：</strong>點雲密度代表在該空間位置找到電子的機率分布，並非電子實際繞核運行的軌跡，90% 邊界線僅為視覺化輔助，並非實體外殼。
+                                (3) <strong>教學近似模型：</strong>本模擬器採用類氫波函數之角度與徑向機率分布作為教學視覺化，f 軌域與多電子重元素之電子雲屬於教學示意近似，非完整多體薛丁格方程式數值求解。
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- 6. External Operation Hint Bar -->
+                    <div class="canvas-hint-bar">
+                        拖曳畫布旋轉 3D 視角 ・ 使用按鈕或滑桿縮放 ・ 開啟「剖面觀察」可檢視 2s / 3s 內部徑向節面 ・ 手機支援單指觸控
+                    </div>
+                </section>
+
+                <!-- Card D: Orbital Explorer -->
+                <section class="card" aria-label="s p d f 軌域形狀探索">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <h2 class="card-title">軌域形狀探索（s, p, d, f Orbitals）</h2>
+                            <p class="card-desc">切換主能階 n、次能階與空間方向，立即在上方 3D 視窗檢視獨立軌域機率分布</p>
+                        </div>
+                    </div>
+
+                    <div class="orbital-controls-grid">
+                        <!-- Principal Energy Level n -->
+                        <div class="orbital-row-box">
+                            <span class="field-label">1. 主能階 Principal Energy Level (n)</span>
+                            <div id="nButtonsGroup" class="btn-group">
+                                <button type="button" class="btn btn-sm" data-n="1">n = 1</button>
+                                <button type="button" class="btn btn-sm btn-active" data-n="2">n = 2</button>
+                                <button type="button" class="btn btn-sm" data-n="3">n = 3</button>
+                                <button type="button" class="btn btn-sm" data-n="4">n = 4</button>
+                            </div>
+                        </div>
+
+                        <!-- Sublevel s, p, d, f -->
+                        <div class="orbital-row-box">
+                            <span class="field-label">2. 次能階 Sublevel（遵守第 n 層僅含 n 種次能階規則）</span>
+                            <div id="lButtonsGroup" class="btn-group">
+                                <button type="button" class="btn btn-sm" data-l="s">s (1軌域)</button>
+                                <button type="button" class="btn btn-sm btn-active" data-l="p">p (3軌域)</button>
+                                <button type="button" class="btn btn-sm" data-l="d">d (5軌域)</button>
+                                <button type="button" class="btn btn-sm" data-l="f">f (7軌域)</button>
+                            </div>
+                            <span id="sublevelRuleHint" class="wrap-text" style="font-size: 11.5px; color: var(--text-secondary);">n = 2 僅存在 2s 與 2p 次能階（2d、2f 不存在）。</span>
+                        </div>
+                    </div>
+
+                    <!-- Orientation Selector -->
+                    <div class="orbital-row-box">
+                        <span class="field-label">3. 軌域空間方向（點擊後自動切換至「單一軌域 3D 形狀」檢視）</span>
+                        <div id="orientationGrid" class="orient-grid"></div>
+                    </div>
+
+                    <!-- Active Orbital Description -->
+                    <div id="orbitalSummary" class="info-callout">
+                        <strong>目前選取軌域：2pₓ</strong>｜主能階 n = 2，雙瓣形（Two-lobed）p 軌域，電子出現機率集中在 x 軸兩側，節面位於 yz 平面。
+                    </div>
+
+                    <!-- Orbital vs Orbit Distinction -->
+                    <div class="compare-box">
+                        <div class="compare-item">
+                            <strong style="color: var(--accent-blue);">現代波動力學：軌域（Orbital）</strong><br>
+                            描述電子在原子核周圍三維空間出現的<strong>機率分布圖（Probability Map）</strong>，不代表電子沿著固定軌跡移動。每個軌域最多容納 2 顆相反自旋電子（↑↓）。
+                        </div>
+                        <div class="compare-item">
+                            <strong style="color: var(--text-secondary);">舊波耳模型：軌道（Orbit，已淘汰）</strong><br>
+                            將電子假想為像行星繞太陽般沿著<strong>固定圓形路徑</strong>繞核運行。此模型僅能符合氫原子光譜，無法解釋多電子原子結構。
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Card E: Electron Configuration & Orbital Box Diagram -->
+                <section class="card" aria-label="電子排列與軌域方框圖">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <h2 class="card-title">電子排列、能階與軌域方框圖</h2>
+                            <p class="card-desc">嚴格遵守能量最低原理（Aufbau）、包立不相容原理（Pauli）與洪德定則（Hund）</p>
+                        </div>
+                    </div>
+
+                    <!-- Controls for Filling Animation & Excitation -->
+                    <div class="btn-group">
+                        <button id="btnStepDownE" type="button" class="btn btn-sm">⏮ −1 e⁻</button>
+                        <button id="btnPlayFill" type="button" class="btn btn-sm btn-primary">⏵ 逐一填入電子動畫</button>
+                        <button id="btnStopFill" type="button" class="btn btn-sm">⏹ 停止／顯示全部</button>
+                        <button id="btnStepUpE" type="button" class="btn btn-sm">⏭ +1 e⁻</button>
+                        <button id="btnToggleExcited" type="button" class="btn btn-sm btn-warn">⚡ 吸收能量 → 激發態</button>
+                    </div>
+
+                    <!-- Full & Shorthand Electron Configurations -->
+                    <div class="config-readout-grid">
+                        <div class="config-panel">
+                            <div class="field-label">完整電子組態（Full Electron Configuration）</div>
+                            <div id="configFull" class="config-string">1s² 2s² 2p⁴</div>
+                        </div>
+                        <div class="config-panel">
+                            <div class="field-label">惰性氣體簡寫（Noble Gas Shorthand）</div>
+                            <div id="configShort" class="config-string">[He] 2s² 2p⁴</div>
+                        </div>
+                    </div>
+
+                    <!-- Valence, Core, Magnetism Metrics -->
+                    <div class="valence-grid">
+                        <div class="metric-cell">
+                            <span class="metric-label">價電子（Valence Electrons）</span>
+                            <span id="valValence" class="metric-value" style="color: var(--accent-blue);">6</span>
+                            <span id="valValenceSub" class="wrap-text" style="font-size: 11.5px; color: var(--text-secondary);">最外層主能階 n = 2 (2s² 2p⁴)</span>
+                        </div>
+                        <div class="metric-cell">
+                            <span class="metric-label">內層電子（Core Electrons）</span>
+                            <span id="valCore" class="metric-value">2</span>
+                            <span id="valCoreSub" class="wrap-text" style="font-size: 11.5px; color: var(--text-secondary);">內層主能階電子，不參與一般鍵結</span>
+                        </div>
+                        <div class="metric-cell">
+                            <span class="metric-label">未成對電子與磁性</span>
+                            <span id="valMagnet" class="metric-value" style="font-size: 15px;">2 顆（順磁性）</span>
+                            <span id="valMagnetSub" class="wrap-text" style="font-size: 11.5px; color: var(--text-secondary);">Paramagnetic（含未成對電子）</span>
+                        </div>
+                    </div>
+
+                    <div id="configScienceNote" class="info-callout">
+                        依課本填入順序 1s → 2s → 2p → 3s → 3p → 4s → 3d → 4p 排列。氧（O）的 2p⁴ 電子會先分別單獨進入三個 2p 軌域並保持平行自旋（↑ ↑ ↑），第 4 顆電子才配對成相反自旋（↑↓ ↑ ↑）。
+                    </div>
+
+                    <!-- Horizontally Scrollable Box Diagram -->
+                    <div class="selector-group">
+                        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px;">
+                            <span class="field-label">軌域方框圖（Orbital Box Diagram，由低能階至高能階；藍框為價殼層，超出寬度可左右滑動）：</span>
+                        </div>
+                        <div class="box-diagram-wrapper">
+                            <div id="boxDiagramTrack" class="box-diagram-track" role="region" aria-label="軌域方框圖列表"></div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- 3. Bottom Full-Width Section: Six Interactive Teaching Labs -->
+        <section class="card" aria-label="六項互動式教學實驗室">
+            <div class="card-header">
+                <div class="card-title-group">
+                    <h2 class="card-title">六大互動式教學實驗室（Interactive Chemistry Labs）</h2>
+                    <p class="card-desc">選擇下方實驗分頁並點擊操作按鈕，觀察原子參數、3D 機率電子雲與能階方框圖的即時聯動變化</p>
+                </div>
+            </div>
+
+            <div id="labsTabs" class="labs-tabs" role="tablist">
+                <button type="button" class="lab-tab active" role="tab" aria-selected="true" data-lab="1">實驗 1：質子與元素</button>
+                <button type="button" class="lab-tab" role="tab" aria-selected="false" data-lab="2">實驗 2：中子與同位素</button>
+                <button type="button" class="lab-tab" role="tab" aria-selected="false" data-lab="3">實驗 3：電子與陰陽離子</button>
+                <button type="button" class="lab-tab" role="tab" aria-selected="false" data-lab="4">實驗 4：s/p/d/f 軌域形狀</button>
+                <button type="button" class="lab-tab" role="tab" aria-selected="false" data-lab="5">實驗 5：電子組態與例外</button>
+                <button type="button" class="lab-tab" role="tab" aria-selected="false" data-lab="6">實驗 6：激發態與光子躍遷</button>
+            </div>
+
+            <div id="labContentPanel" class="lab-panel" role="tabpanel"></div>
+        </section>
+
+        <footer class="app-footer">
+            現代量子力學原子模型互動模擬器 ・ 教學設計依據 Zumdahl &amp; DeCoste《Introductory Chemistry: A Foundation, 9e》Ch. 4 &amp; Ch. 11 ・ 零外部依賴單一 HTML 檔案
+        </footer>
+    </div>
+
+    <script>
+    "use strict";
+    (function () {
+        /* =========================================================
+           1. Complete 118-Element Scientific Database (Taiwan TC)
+           Format: [Z, symbol, cnName, enName, defaultMassNumberA, isRadioactiveSchematic]
+           ========================================================= */
+        const ELEMENTS_RAW = [
+            [1,"H","氫","Hydrogen",1,false],[2,"He","氦","Helium",4,false],
+            [3,"Li","鋰","Lithium",7,false],[4,"Be","鈹","Beryllium",9,false],
+            [5,"B","硼","Boron",11,false],[6,"C","碳","Carbon",12,false],
+            [7,"N","氮","Nitrogen",14,false],[8,"O","氧","Oxygen",16,false],
+            [9,"F","氟","Fluorine",19,false],[10,"Ne","氖","Neon",20,false],
+            [11,"Na","鈉","Sodium",23,false],[12,"Mg","鎂","Magnesium",24,false],
+            [13,"Al","鋁","Aluminum",27,false],[14,"Si","矽","Silicon",28,false],
+            [15,"P","磷","Phosphorus",31,false],[16,"S","硫","Sulfur",32,false],
+            [17,"Cl","氯","Chlorine",35,false],[18,"Ar","氬","Argon",40,false],
+            [19,"K","鉀","Potassium",39,false],[20,"Ca","鈣","Calcium",40,false],
+            [21,"Sc","鈧","Scandium",45,false],[22,"Ti","鈦","Titanium",48,false],
+            [23,"V","釩","Vanadium",51,false],[24,"Cr","鉻","Chromium",52,false],
+            [25,"Mn","錳","Manganese",55,false],[26,"Fe","鐵","Iron",56,false],
+            [27,"Co","鈷","Cobalt",59,false],[28,"Ni","鎳","Nickel",58,false],
+            [29,"Cu","銅","Copper",63,false],[30,"Zn","鋅","Zinc",64,false],
+            [31,"Ga","鎵","Gallium",69,false],[32,"Ge","鍺","Germanium",74,false],
+            [33,"As","砷","Arsenic",75,false],[34,"Se","硒","Selenium",80,false],
+            [35,"Br","溴","Bromine",79,false],[36,"Kr","氪","Krypton",84,false],
+            [37,"Rb","銣","Rubidium",85,false],[38,"Sr","鍶","Strontium",88,false],
+            [39,"Y","釔","Yttrium",89,false],[40,"Zr","鋯","Zirconium",90,false],
+            [41,"Nb","鈮","Niobium",93,false],[42,"Mo","鉬","Molybdenum",98,false],
+            [43,"Tc","鎝","Technetium",98,true],[44,"Ru","釕","Ruthenium",102,false],
+            [45,"Rh","銠","Rhodium",103,false],[46,"Pd","鈀","Palladium",106,false],
+            [47,"Ag","銀","Silver",107,false],[48,"Cd","鎘","Cadmium",114,false],
+            [49,"In","銦","Indium",115,false],[50,"Sn","錫","Tin",120,false],
+            [51,"Sb","銻","Antimony",121,false],[52,"Te","碲","Tellurium",130,false],
+            [53,"I","碘","Iodine",127,false],[54,"Xe","氙","Xenon",132,false],
+            [55,"Cs","銫","Cesium",133,false],[56,"Ba","鋇","Barium",138,false],
+            [57,"La","鑭","Lanthanum",139,false],[58,"Ce","鈰","Cerium",140,false],
+            [59,"Pr","鐠","Praseodymium",141,false],[60,"Nd","釹","Neodymium",142,false],
+            [61,"Pm","鉕","Promethium",145,true],[62,"Sm","釤","Samarium",152,false],
+            [63,"Eu","銪","Europium",153,false],[64,"Gd","釓","Gadolinium",158,false],
+            [65,"Tb","鋱","Terbium",159,false],[66,"Dy","鏑","Dysprosium",164,false],
+            [67,"Ho","鈥","Holmium",165,false],[68,"Er","鉺","Erbium",166,false],
+            [69,"Tm","銩","Thulium",169,false],[70,"Yb","鐿","Ytterbium",174,false],
+            [71,"Lu","鎦","Lutetium",175,false],[72,"Hf","鉿","Hafnium",180,false],
+            [73,"Ta","鉭","Tantalum",181,false],[74,"W","鎢","Tungsten",184,false],
+            [75,"Re","錸","Rhenium",187,false],[76,"Os","鋨","Osmium",192,false],
+            [77,"Ir","銥","Iridium",193,false],[78,"Pt","鉑","Platinum",195,false],
+            [79,"Au","金","Gold",197,false],[80,"Hg","汞","Mercury",202,false],
+            [81,"Tl","鉈","Thallium",205,false],[82,"Pb","鉛","Lead",208,false],
+            [83,"Bi","鉍","Bismuth",209,false],[84,"Po","釙","Polonium",209,true],
+            [85,"At","砈","Astatine",210,true],[86,"Rn","氡","Radon",222,true],
+            [87,"Fr","鍅","Francium",223,true],[88,"Ra","鐳","Radium",226,true],
+            [89,"Ac","錒","Actinium",227,true],[90,"Th","釷","Thorium",232,true],
+            [91,"Pa","鏷","Protactinium",231,true],[92,"U","鈾","Uranium",238,true],
+            [93,"Np","錼","Neptunium",237,true],[94,"Pu","鈽","Plutonium",244,true],
+            [95,"Am","鋂","Americium",243,true],[96,"Cm","鋦","Curium",247,true],
+            [97,"Bk","鉳","Berkelium",247,true],[98,"Cf","鉲","Californium",251,true],
+            [99,"Es","鑀","Einsteinium",252,true],[100,"Fm","鐨","Fermium",257,true],
+            [101,"Md","鍆","Mendelevium",258,true],[102,"No","鍩","Nobelium",259,true],
+            [103,"Lr","鐒","Lawrencium",262,true],[104,"Rf","鑪","Rutherfordium",267,true],
+            [105,"Db","𨧀","Dubnium",268,true],[106,"Sg","𨭎","Seaborgium",269,true],
+            [107,"Bh","𨨏","Bohrium",270,true],[108,"Hs","𨭆","Hassium",277,true],
+            [109,"Mt","䥑","Meitnerium",278,true],[110,"Ds","鐽","Darmstadtium",281,true],
+            [111,"Rg","錀","Roentgenium",282,true],[112,"Cn","鎶","Copernicium",285,true],
+            [113,"Nh","鉨","Nihonium",286,true],[114,"Fl","鈇","Flerovium",289,true],
+            [115,"Mc","鏌","Moscovium",290,true],[116,"Lv","鉝","Livermorium",293,true],
+            [117,"Ts","鿬","Tennessine",294,true],[118,"Og","鿫","Oganesson",294,true]
+        ];
+
+        const ELEMENTS = ELEMENTS_RAW.map(e => ({
+            z: e[0],
+            sym: e[1],
+            cn: e[2],
+            en: e[3],
+            defaultA: e[4],
+            defaultN: e[4] - e[0],
+            isRad: e[5]
+        }));
+
+        const ELEMENT_MAP = new Map();
+        ELEMENTS.forEach(el => ELEMENT_MAP.set(el.z, el));
+
+        // Common Monatomic Anion English & Traditional Chinese Names
+        const ANION_NAMES = {
+            1:  { cn: "氫負離子", en: "Hydride ion" },
+            6:  { cn: "碳陰離子", en: "Carbide ion" },
+            7:  { cn: "氮離子", en: "Nitride ion" },
+            8:  { cn: "氧離子", en: "Oxide ion" },
+            9:  { cn: "氟離子", en: "Fluoride ion" },
+            15: { cn: "磷離子", en: "Phosphide ion" },
+            16: { cn: "硫離子", en: "Sulfide ion" },
+            17: { cn: "氯離子", en: "Chloride ion" },
+            34: { cn: "硒離子", en: "Selenide ion" },
+            35: { cn: "溴離子", en: "Bromide ion" },
+            52: { cn: "碲離子", en: "Telluride ion" },
+            53: { cn: "碘離子", en: "Iodide ion" }
+        };
+
+        // Zumdahl 9e Figure 11.32 Sublevel Filling Order
+        const SUBLEVELS = [
+            { id: "1s", n: 1, l: "s", boxes: 1, cap: 2 },
+            { id: "2s", n: 2, l: "s", boxes: 1, cap: 2 },
+            { id: "2p", n: 2, l: "p", boxes: 3, cap: 6 },
+            { id: "3s", n: 3, l: "s", boxes: 1, cap: 2 },
+            { id: "3p", n: 3, l: "p", boxes: 3, cap: 6 },
+            { id: "4s", n: 4, l: "s", boxes: 1, cap: 2 },
+            { id: "3d", n: 3, l: "d", boxes: 5, cap: 10 },
+            { id: "4p", n: 4, l: "p", boxes: 3, cap: 6 },
+            { id: "5s", n: 5, l: "s", boxes: 1, cap: 2 },
+            { id: "4d", n: 4, l: "d", boxes: 5, cap: 10 },
+            { id: "5p", n: 5, l: "p", boxes: 3, cap: 6 },
+            { id: "6s", n: 6, l: "s", boxes: 1, cap: 2 },
+            { id: "4f", n: 4, l: "f", boxes: 7, cap: 14 },
+            { id: "5d", n: 5, l: "d", boxes: 5, cap: 10 },
+            { id: "6p", n: 6, l: "p", boxes: 3, cap: 6 },
+            { id: "7s", n: 7, l: "s", boxes: 1, cap: 2 },
+            { id: "5f", n: 5, l: "f", boxes: 7, cap: 14 },
+            { id: "6d", n: 6, l: "d", boxes: 5, cap: 10 },
+            { id: "7p", n: 7, l: "p", boxes: 3, cap: 6 }
+        ];
+
+        const NOBLE_CORES = [
+            { e: 86, sym: "Rn", subs: ["1s","2s","2p","3s","3p","4s","3d","4p","5s","4d","5p","6s","4f","5d","6p"] },
+            { e: 54, sym: "Xe", subs: ["1s","2s","2p","3s","3p","4s","3d","4p","5s","4d","5p"] },
+            { e: 36, sym: "Kr", subs: ["1s","2s","2p","3s","3p","4s","3d","4p"] },
+            { e: 18, sym: "Ar", subs: ["1s","2s","2p","3s","3p"] },
+            { e: 10, sym: "Ne", subs: ["1s","2s","2p"] },
+            { e: 2,  sym: "He", subs: ["1s"] }
+        ];
+
+        const ORIENTATIONS = {
+            s: [
+                { id: "s", label: "s（球形對稱）" }
+            ],
+            p: [
+                { id: "px", label: "pₓ（沿 x 軸）" },
+                { id: "py", label: "pᵧ（沿 y 軸）" },
+                { id: "pz", label: "p₂（沿 z 軸）" }
+            ],
+            d: [
+                { id: "dxy", label: "dₓᵧ（xy 平面）" },
+                { id: "dxz", label: "dₓ₂（xz 平面）" },
+                { id: "dyz", label: "dᵧ₂（yz 平面）" },
+                { id: "dx2y2", label: "dₓ²₋ᵧ²（沿軸）" },
+                { id: "dz2", label: "d₂²（雙瓣＋環）" }
+            ],
+            f: [
+                { id: "fz3", label: "f₂³（軸向多瓣）" },
+                { id: "fxz2", label: "fₓ₂²（xz 六瓣）" },
+                { id: "fyz2", label: "fᵧ₂²（yz 六瓣）" },
+                { id: "fxyz", label: "fₓᵧ₂（八瓣對稱）" },
+                { id: "fzx2y2", label: "f₂(ₓ²₋ᵧ²)（八瓣）" },
+                { id: "fx3", label: "fₓ(ₓ²₋₃ᵧ²)（六瓣）" },
+                { id: "fy3", label: "fᵧ(₃ₓ²₋ᵧ²)（六瓣）" }
+            ]
+        };
+
+        const SUPERSCRIPTS = {
+            "0":"⁰","1":"¹","2":"²","3":"³","4":"⁴","5":"⁵","6":"⁶","7":"⁷","8":"⁸","9":"⁹","+":"⁺","-":"⁻"
+        };
+        const SUBSCRIPTS = {
+            "0":"₀","1":"₁","2":"₂","3":"₃","4":"₄","5":"₅","6":"₆","7":"₇","8":"₈","9":"₉"
+        };
+
+        function toSup(str) {
+            return String(str).split("").map(c => SUPERSCRIPTS[c] || c).join("");
+        }
+        function toSub(str) {
+            return String(str).split("").map(c => SUBSCRIPTS[c] || c).join("");
+        }
+        function clamp(v, min, max) {
+            return Math.max(min, Math.min(max, v));
+        }
+
+        /* =========================================================
+           2. Application State
+           ========================================================= */
+        const state = {
+            protons: 8,
+            neutrons: 8,
+            electrons: 8,
+
+            viewMode: "atom", // "atom" | "orbital"
+            selectedN: 2,
+            selectedL: "p",
+            selectedOrient: "px",
+
+            cloudIntensity: 0.75,
+            zoom: 1.0,
+            nucleusScale: 1.0,
+            showBoundary: true,
+            sliceMode: false,
+            autoRotate: true,
+
+            rotX: 0.34,
+            rotY: -0.52,
+
+            isExcited: false,
+            excitedFrom: null,
+            excitedTo: null,
+
+            fillingTimer: null,
+            fillingTargetE: 8,
+
+            activeLab: 1,
+
+            // Photon visual wave packet animation state
+            photonAnim: null // { type: 'absorb'|'emit', color: '#...', progress: 0..1, label: '' }
+        };
+
+        // 3D cached geometry buffers
+        let cloudPoints = [];
+        let boundaryGuides = [];
+        let nucleusParticles = [];
+
+        /* =========================================================
+           3. Quantum Electron Configuration Engine
+           ========================================================= */
+        function computeConfiguration(Z, E, isExcited) {
+            const counts = {};
+            SUBLEVELS.forEach(s => { counts[s.id] = 0; });
+
+            const effE = Math.min(E, 118);
+            let rem = effE;
+            for (const sub of SUBLEVELS) {
+                if (rem <= 0) break;
+                const put = Math.min(sub.cap, rem);
+                counts[sub.id] = put;
+                rem -= put;
+            }
+
+            let noteKind = "standard";
+
+            // Neutral ground-state exceptions (Zumdahl Fig. 11.30 & 11.34)
+            if (!isExcited && E === Z && Z >= 1 && Z <= 118) {
+                const exceptions = {
+                    24: { "4s": 1, "3d": 5, kind: "cr_cu" },
+                    29: { "4s": 1, "3d": 10, kind: "cr_cu" },
+                    41: { "5s": 1, "4d": 4, kind: "heavy_exc" },
+                    42: { "5s": 1, "4d": 5, kind: "heavy_exc" },
+                    44: { "5s": 1, "4d": 7, kind: "heavy_exc" },
+                    45: { "5s": 1, "4d": 8, kind: "heavy_exc" },
+                    46: { "5s": 0, "4d": 10, kind: "heavy_exc" },
+                    47: { "5s": 1, "4d": 10, kind: "heavy_exc" },
+                    57: { "6s": 2, "4f": 0, "5d": 1, kind: "la_ac" },
+                    58: { "6s": 2, "4f": 1, "5d": 1, kind: "la_ac" },
+                    64: { "6s": 2, "4f": 7, "5d": 1, kind: "la_ac" },
+                    78: { "6s": 1, "4f": 14, "5d": 9, kind: "heavy_exc" },
+                    79: { "6s": 1, "4f": 14, "5d": 10, kind: "heavy_exc" },
+                    89: { "7s": 2, "5f": 0, "6d": 1, kind: "la_ac" },
+                    90: { "7s": 2, "5f": 0, "6d": 2, kind: "la_ac" },
+                    91: { "7s": 2, "5f": 2, "6d": 1, kind: "heavy_exc" },
+                    92: { "7s": 2, "5f": 3, "6d": 1, kind: "heavy_exc" },
+                    93: { "7s": 2, "5f": 4, "6d": 1, kind: "heavy_exc" },
+                    96: { "7s": 2, "5f": 7, "6d": 1, kind: "heavy_exc" }
+                };
+                if (exceptions[Z]) {
+                    const ex = exceptions[Z];
+                    Object.keys(ex).forEach(k => {
+                        if (k !== "kind") counts[k] = ex[k];
+                    });
+                    noteKind = ex.kind;
+                }
+            }
+
+            // Transition metal cation rule: remove outermost ns electrons before (n-1)d
+            const isTM = (Z >= 21 && Z <= 30) || (Z >= 39 && Z <= 48) || (Z >= 72 && Z <= 80) || (Z >= 104 && Z <= 112);
+            if (E < Z && isTM && Z <= 118) {
+                const neutralCfg = computeConfiguration(Z, Z, false);
+                SUBLEVELS.forEach(s => { counts[s.id] = neutralCfg.counts[s.id]; });
+                let toRemove = Z - E;
+                const removeOrder = ["7p","7s","6d","5f","6p","6s","5d","4f","5p","5s","4d","4p","4s","3d","3p","3s","2p","2s","1s"];
+                for (const id of removeOrder) {
+                    if (toRemove <= 0) break;
+                    if (counts[id] > 0) {
+                        const take = Math.min(counts[id], toRemove);
+                        counts[id] -= take;
+                        toRemove -= take;
+                    }
+                }
+                noteKind = "tm_cation";
+            } else if (E !== Z && Math.abs(Z - E) > 4) {
+                noteKind = "extreme_ion";
+            } else if (Z > 56 && noteKind === "standard") {
+                noteKind = "heavy_approx";
+            }
+
+            if (E > 118) {
+                noteKind = "over_118";
+            }
+
+            // Excited state: promote 1 outermost electron to next available higher sublevel
+            let excitedFrom = null;
+            let excitedTo = null;
+            if (isExcited && effE >= 1) {
+                let lastIdx = -1;
+                for (let i = SUBLEVELS.length - 1; i >= 0; i--) {
+                    if (counts[SUBLEVELS[i].id] > 0) {
+                        lastIdx = i;
+                        break;
+                    }
+                }
+                if (lastIdx >= 0 && lastIdx < SUBLEVELS.length - 1) {
+                    const targetIdx = lastIdx + 1;
+                    counts[SUBLEVELS[lastIdx].id] -= 1;
+                    counts[SUBLEVELS[targetIdx].id] += 1;
+                    excitedFrom = SUBLEVELS[lastIdx].id;
+                    excitedTo = SUBLEVELS[targetIdx].id;
+                    noteKind = "excited";
+                }
+            }
+
+            // Build strings
+            const fullParts = [];
+            SUBLEVELS.forEach(sub => {
+                if (counts[sub.id] > 0) {
+                    fullParts.push(sub.id + toSup(counts[sub.id]));
+                }
+            });
+            const fullStr = fullParts.length ? fullParts.join(" ") : (E === 0 ? "無電子（0 e⁻）" : "");
+
+            // Noble gas shorthand
+            let shortStr = fullStr;
+            if (!isExcited && effE > 2) {
+                for (const core of NOBLE_CORES) {
+                    if (effE > core.e) {
+                        const matchesCore = core.subs.every(id => {
+                            const meta = SUBLEVELS.find(s => s.id === id);
+                            return counts[id] === meta.cap;
+                        });
+                        if (matchesCore) {
+                            const coreSet = new Set(core.subs);
+                            const outerParts = [];
+                            SUBLEVELS.forEach(sub => {
+                                if (!coreSet.has(sub.id) && counts[sub.id] > 0) {
+                                    outerParts.push(sub.id + toSup(counts[sub.id]));
+                                }
+                            });
+                            shortStr = `[${core.sym}] ` + outerParts.join(" ");
+                            break;
+                        }
+                    }
+                }
+            } else if (isExcited) {
+                shortStr = fullStr + " (激發態)";
+            }
+
+            // Highest principal energy level & valence electrons
+            let maxN = 0;
+            SUBLEVELS.forEach(sub => {
+                if (counts[sub.id] > 0 && sub.n > maxN) {
+                    maxN = sub.n;
+                }
+            });
+
+            let valenceE = 0;
+            const valenceSubLabels = [];
+            SUBLEVELS.forEach(sub => {
+                if (sub.n === maxN && counts[sub.id] > 0) {
+                    valenceE += counts[sub.id];
+                    valenceSubLabels.push(sub.id + toSup(counts[sub.id]));
+                }
+            });
+            const coreE = Math.max(0, effE - valenceE);
+
+            // Unpaired electrons via Hund's Rule
+            let unpaired = 0;
+            SUBLEVELS.forEach(sub => {
+                const c = counts[sub.id];
+                if (c > 0) {
+                    if (c <= sub.boxes) {
+                        unpaired += c;
+                    } else {
+                        unpaired += (sub.cap - c);
+                    }
+                }
+            });
+
+            return {
+                counts,
+                fullStr,
+                shortStr,
+                maxN,
+                valenceE,
+                coreE,
+                valenceSubLabels,
+                unpaired,
+                noteKind,
+                excitedFrom,
+                excitedTo
+            };
+        }
+
+        /* =========================================================
+           4. 3D Wave Mechanical Probability Sampler & Nucleus Builder
+           ========================================================= */
+        function orbitalColor(l) {
+            if (l === "s") return { r: 0, g: 113, b: 227 };     // #0071E3
+            if (l === "p") return { r: 88, g: 86, b: 214 };     // #5856D6
+            if (l === "d") return { r: 245, g: 124, b: 0 };     // #F57C00
+            return { r: 156, g: 39, b: 176 };                   // #9C27B0
+        }
+
+        // Radial probability amplitude squared proxy with authentic radial nodes (n - l - 1)
+        function radialProbDensity(rNorm, n, lIdx) {
+            // rNorm in [0, 1] maps to scaled radial coordinate rho
+            const rho = rNorm * (n * 3.8 + 1.8);
+            let poly = 1.0;
+            const nodes = Math.max(0, n - lIdx - 1);
+            if (nodes === 1) {
+                poly = 1 - rho / (2.0 + lIdx);
+            } else if (nodes === 2) {
+                poly = 1 - 0.65 * rho + 0.075 * rho * rho;
+            } else if (nodes >= 3) {
+                poly = Math.cos(rho * 0.85) * (1 - 0.1 * rho);
+            }
+            const rPow = Math.pow(Math.max(rho, 0.02), lIdx);
+            const env = Math.exp(-rho / (n * 0.72 + 0.35));
+            const psi = rPow * poly * env;
+            return psi * psi * rNorm * rNorm; // r^2 |R(r)|^2
+        }
+
+        // Angular probability |Y_lm(theta, phi)|^2 for s, p, d, f orientations
+        function angularProbDensity(ux, uy, uz, orient) {
+            switch (orient) {
+                case "s": return 1.0;
+                // p orbitals
+                case "px": return ux * ux * 3.0;
+                case "py": return uy * uy * 3.0;
+                case "pz": return uz * uz * 3.0;
+                // d orbitals
+                case "dxy": return (ux * uy) * (ux * uy) * 15.0;
+                case "dxz": return (ux * uz) * (ux * uz) * 15.0;
+                case "dyz": return (uy * uz) * (uy * uz) * 15.0;
+                case "dx2y2": {
+                    const v = ux * ux - uy * uy;
+                    return v * v * 3.75;
+                }
+                case "dz2": {
+                    const v = 3 * uz * uz - 1;
+                    return v * v * 1.25;
+                }
+                // f orbitals (7 real harmonics)
+                case "fz3": {
+                    const v = uz * (5 * uz * uz - 3);
+                    return v * v * 1.6;
+                }
+                case "fxz2": {
+                    const v = ux * (5 * uz * uz - 1);
+                    return v * v * 1.2;
+                }
+                case "fyz2": {
+                    const v = uy * (5 * uz * uz - 1);
+                    return v * v * 1.2;
+                }
+                case "fxyz": {
+                    const v = ux * uy * uz;
+                    return v * v * 105.0;
+                }
+                case "fzx2y2": {
+                    const v = uz * (ux * ux - uy * uy);
+                    return v * v * 26.0;
+                }
+                case "fx3": {
+                    const v = ux * (ux * ux - 3 * uy * uy);
+                    return v * v * 4.5;
+                }
+                case "fy3": {
+                    const v = uy * (3 * ux * ux - uy * uy);
+                    return v * v * 4.5;
+                }
+                default: return 1.0;
+            }
+        }
+
+        function sampleOrbitalPoints(n, l, orient, count, maxRadius) {
+            const pts = [];
+            const lIdx = l === "s" ? 0 : l === "p" ? 1 : l === "d" ? 2 : 3;
+            const col = orbitalColor(l);
+
+            // Estimate max radial value for rejection sampling
+            let maxRadP = 0.001;
+            for (let i = 1; i <= 60; i++) {
+                const p = radialProbDensity(i / 60, n, lIdx);
+                if (p > maxRadP) maxRadP = p;
+            }
+
+            // Estimate max angular value
+            const maxAngP =
+                orient === "s" ? 1.0 :
+                l === "p" ? 3.0 :
+                orient === "dz2" ? 5.0 :
+                l === "d" ? 3.8 :
+                orient === "fxyz" ? 4.0 : 5.2;
+
+            let attempts = 0;
+            const limit = count * 35;
+            while (pts.length < count && attempts < limit) {
+                attempts++;
+                const rNorm = Math.pow(Math.random(), 0.72);
+                const rP = radialProbDensity(rNorm, n, lIdx);
+                if (Math.random() * maxRadP > rP) continue;
+
+                // Uniform direction on unit sphere
+                const u = 2 * Math.random() - 1;
+                const phi = Math.random() * Math.PI * 2;
+                const s = Math.sqrt(Math.max(0, 1 - u * u));
+                const ux = s * Math.cos(phi);
+                const uy = s * Math.sin(phi);
+                const uz = u;
+
+                const aP = angularProbDensity(ux, uy, uz, orient);
+                if (Math.random() * maxAngP > aP) continue;
+
+                const R = rNorm * maxRadius;
+                pts.push({
+                    x: ux * R,
+                    y: uy * R,
+                    z: uz * R,
+                    r: col.r,
+                    g: col.g,
+                    b: col.b,
+                    size: 1.55 + (aP / maxAngP) * 0.9,
+                    alpha: 0.34 + 0.48 * Math.min(1, rP / maxRadP)
+                });
+            }
+            return pts;
+        }
+
+        function buildBoundaryGuides(n, l, orient, maxRadius) {
+            const guides = [];
+            const col = orbitalColor(l);
+            const r90 = maxRadius * 0.76;
+
+            if (l === "s") {
+                // Three orthogonal dashed/soft circles representing 90% spherical surface
+                guides.push({ type: "circle", axis: "xy", radius: r90, col });
+                guides.push({ type: "circle", axis: "xz", radius: r90, col });
+                guides.push({ type: "circle", axis: "yz", radius: r90, col });
+            } else if (l === "p") {
+                const lobeCenter = r90 * 0.48;
+                const lobeR = r90 * 0.44;
+                const axis = orient === "px" ? [1,0,0] : orient === "py" ? [0,1,0] : [0,0,1];
+                guides.push({ type: "lobe", cx: axis[0]*lobeCenter, cy: axis[1]*lobeCenter, cz: axis[2]*lobeCenter, radius: lobeR, col });
+                guides.push({ type: "lobe", cx: -axis[0]*lobeCenter, cy: -axis[1]*lobeCenter, cz: -axis[2]*lobeCenter, radius: lobeR, col });
+            } else if (l === "d") {
+                if (orient === "dz2") {
+                    const lobeCenter = r90 * 0.50;
+                    const lobeR = r90 * 0.36;
+                    guides.push({ type: "lobe", cx: 0, cy: 0, cz: lobeCenter, radius: lobeR, col });
+                    guides.push({ type: "lobe", cx: 0, cy: 0, cz: -lobeCenter, radius: lobeR, col });
+                    guides.push({ type: "circle", axis: "xy", radius: r90 * 0.45, col });
+                } else {
+                    const d = r90 * 0.48;
+                    const lr = r90 * 0.31;
+                    const dirs =
+                        orient === "dxy" ? [[1,1,0],[-1,1,0],[1,-1,0],[-1,-1,0]] :
+                        orient === "dxz" ? [[1,0,1],[-1,0,1],[1,0,-1],[-1,0,-1]] :
+                        orient === "dyz" ? [[0,1,1],[0,-1,1],[0,1,-1],[0,-1,-1]] :
+                        [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0]];
+                    dirs.forEach(v => {
+                        const len = Math.hypot(v[0], v[1], v[2]) || 1;
+                        guides.push({ type: "lobe", cx: (v[0]/len)*d, cy: (v[1]/len)*d, cz: (v[2]/len)*d, radius: lr, col });
+                    });
+                }
+            } else {
+                // f orbital outer 90% reference envelope
+                guides.push({ type: "circle", axis: "xy", radius: r90 * 0.86, col });
+                guides.push({ type: "circle", axis: "xz", radius: r90 * 0.86, col });
+            }
+            return guides;
+        }
+
+        function rebuildNucleus() {
+            nucleusParticles = [];
+            const pCount = state.protons;
+            const nCount = state.neutrons;
+            const total = pCount + nCount;
+            if (total === 0) return;
+
+            // Cap rendered nucleons at 110 for crisp, recognizable individual spheres on mobile/desktop
+            const maxRender = 110;
+            const renderTotal = Math.min(total, maxRender);
+            const renderP = Math.round((pCount / total) * renderTotal);
+            const renderN = renderTotal - renderP;
+
+            // Interleave protons & neutrons evenly
+            const types = [];
+            let pi = 0, ni = 0;
+            for (let i = 0; i < renderTotal; i++) {
+                if (pi < renderP && (ni >= renderN || (pi / Math.max(1, renderP)) <= (ni / Math.max(1, renderN)))) {
+                    types.push("p");
+                    pi++;
+                } else {
+                    types.push("n");
+                    ni++;
+                }
+            }
+
+            // Fibonacci spherical packing
+            const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+            const baseR = renderTotal === 1 ? 0 : 7.5 + Math.pow(renderTotal, 0.35) * 4.8;
+            for (let i = 0; i < renderTotal; i++) {
+                const frac = renderTotal === 1 ? 0 : (i + 0.5) / renderTotal;
+                const r = renderTotal === 1 ? 0 : baseR * Math.cbrt(frac);
+                const y = 1 - 2 * frac;
+                const radAtY = Math.sqrt(Math.max(0, 1 - y * y));
+                const theta = goldenAngle * i;
+                nucleusParticles.push({
+                    x: Math.cos(theta) * radAtY * r,
+                    y: y * r,
+                    z: Math.sin(theta) * radAtY * r,
+                    type: types[i]
+                });
+            }
+        }
+
+        function rebuildElectronCloud(cfg) {
+            cloudPoints = [];
+            boundaryGuides = [];
+
+            if (state.viewMode === "orbital") {
+                const maxR = 76 + state.selectedN * 26;
+                const count = state.selectedL === "f" ? 1900 : state.selectedL === "d" ? 1700 : 1500;
+                cloudPoints = sampleOrbitalPoints(state.selectedN, state.selectedL, state.selectedOrient, count, maxR);
+                boundaryGuides = buildBoundaryGuides(state.selectedN, state.selectedL, state.selectedOrient, maxR);
+                return;
+            }
+
+            // Full Atom Electron Cloud Mode
+            if (state.electrons === 0) return;
+
+            // Collect occupied sublevels; emphasize outermost 3 occupied sublevels for clear wave mechanical density
+            const occupied = SUBLEVELS.filter(s => cfg.counts[s.id] > 0);
+            if (!occupied.length) return;
+
+            const maxN = Math.max(1, cfg.maxN);
+            const focusSubs = occupied.slice(-4);
+            const totalFocusE = focusSubs.reduce((acc, s) => acc + cfg.counts[s.id], 0);
+            const totalBudget = 1800;
+
+            focusSubs.forEach(sub => {
+                const eInSub = cfg.counts[sub.id];
+                const ptsForSub = Math.max(180, Math.round((eInSub / Math.max(1, totalFocusE)) * totalBudget));
+                // Scale radius smoothly so outer shell fits comfortably inside canvas
+                const relN = sub.n / maxN;
+                const subMaxR = 54 + relN * 102;
+
+                if (sub.l === "s") {
+                    cloudPoints.push(...sampleOrbitalPoints(sub.n, "s", "s", ptsForSub, subMaxR));
+                } else if (sub.l === "p") {
+                    const pOrients = ["px", "py", "pz"];
+                    const activeBoxes = Math.min(3, eInSub);
+                    const perBox = Math.round(ptsForSub / activeBoxes);
+                    for (let i = 0; i < activeBoxes; i++) {
+                        cloudPoints.push(...sampleOrbitalPoints(sub.n, "p", pOrients[i], perBox, subMaxR));
+                    }
+                } else if (sub.l === "d") {
+                    const dOrients = ["dxy", "dxz", "dyz", "dx2y2", "dz2"];
+                    const activeBoxes = Math.min(5, eInSub);
+                    const perBox = Math.round(ptsForSub / activeBoxes);
+                    for (let i = 0; i < activeBoxes; i++) {
+                        cloudPoints.push(...sampleOrbitalPoints(sub.n, "d", dOrients[i], perBox, subMaxR));
+                    }
+                } else {
+                    const fOrients = ["fz3", "fxz2", "fyz2", "fxyz", "fzx2y2", "fx3", "fy3"];
+                    const activeBoxes = Math.min(7, eInSub);
+                    const perBox = Math.round(ptsForSub / activeBoxes);
+                    for (let i = 0; i < activeBoxes; i++) {
+                        cloudPoints.push(...sampleOrbitalPoints(sub.n, "f", fOrients[i], perBox, subMaxR));
+                    }
+                }
+            });
+
+            // 90% outer boundary for outermost principal level
+            const outerSub = occupied[occupied.length - 1];
+            const outerR = 54 + (outerSub.n / maxN) * 102;
+            const col = orbitalColor(outerSub.l);
+            boundaryGuides = [
+                { type: "circle", axis: "xy", radius: outerR * 0.78, col },
+                { type: "circle", axis: "xz", radius: outerR * 0.78, col },
+                { type: "circle", axis: "yz", radius: outerR * 0.78, col }
+            ];
+        }
+
+        /* =========================================================
+           5. High-DPI 3D Canvas Renderer with ResizeObserver
+           ========================================================= */
+        const canvasStage = document.getElementById("canvasStage");
+        const canvas = document.getElementById("atomCanvas");
+        const ctx = canvas.getContext("2d");
+
+        let cw = 600, ch = 360, dpr = 1;
+
+        function resizeCanvas() {
+            const rect = canvasStage.getBoundingClientRect();
+            if (rect.width < 10 || rect.height < 10) return;
+            dpr = Math.min(window.devicePixelRatio || 1, 2);
+            cw = rect.width;
+            ch = rect.height;
+            canvas.width = Math.round(cw * dpr);
+            canvas.height = Math.round(ch * dpr);
+        }
+
+        if (typeof ResizeObserver !== "undefined") {
+            const ro = new ResizeObserver(() => resizeCanvas());
+            ro.observe(canvasStage);
+        }
+        window.addEventListener("resize", resizeCanvas);
+
+        function project3D(x, y, z, scaleFactor) {
+            const cosY = Math.cos(state.rotY);
+            const sinY = Math.sin(state.rotY);
+            const cosX = Math.cos(state.rotX);
+            const sinX = Math.sin(state.rotX);
+
+            const x1 = x * cosY - z * sinY;
+            const z1 = x * sinY + z * cosY;
+            const y2 = y * cosX - z1 * sinX;
+            const z2 = y * sinX + z1 * cosX;
+
+            const fov = 560;
+            const persp = fov / (fov + z2 + 240);
+            const s = persp * scaleFactor;
+            return {
+                sx: cw * 0.5 + x1 * s,
+                sy: ch * 0.5 - y2 * s,
+                z: z2,
+                scale: s
+            };
+        }
+
+        function drawAxes(scaleFactor) {
+            const axisLen = 148;
+            const axes = [
+                { vec: [axisLen, 0, 0], label: "x", color: "rgba(229, 57, 53, 0.45)" },
+                { vec: [0, axisLen, 0], label: "y", color: "rgba(36, 138, 61, 0.45)" },
+                { vec: [0, 0, axisLen], label: "z", color: "rgba(0, 113, 227, 0.45)" }
+            ];
+            const o = project3D(0, 0, 0, scaleFactor);
+            ctx.lineWidth = 1;
+            ctx.font = "600 11px -apple-system, BlinkMacSystemFont, sans-serif";
+            axes.forEach(a => {
+                const pNeg = project3D(-a.vec[0], -a.vec[1], -a.vec[2], scaleFactor);
+                const pPos = project3D(a.vec[0], a.vec[1], a.vec[2], scaleFactor);
+                ctx.strokeStyle = a.color;
+                ctx.beginPath();
+                ctx.moveTo(pNeg.sx, pNeg.sy);
+                ctx.lineTo(pPos.sx, pPos.sy);
+                ctx.stroke();
+
+                ctx.fillStyle = "rgba(110, 110, 115, 0.85)";
+                ctx.fillText(a.label, pPos.sx + 5, pPos.sy + 4);
+            });
+            // Tiny origin marker if no nucleus
+            if (nucleusParticles.length === 0) {
+                ctx.fillStyle = "rgba(110, 110, 115, 0.5)";
+                ctx.beginPath();
+                ctx.arc(o.sx, o.sy, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function drawBoundaryGuides(scaleFactor) {
+            if (!state.showBoundary || boundaryGuides.length === 0) return;
+            ctx.save();
+            ctx.setLineDash([4, 4]);
+            ctx.lineWidth = 1.15;
+
+            boundaryGuides.forEach(g => {
+                ctx.strokeStyle = `rgba(${g.col.r}, ${g.col.g}, ${g.col.b}, 0.32)`;
+                if (g.type === "circle") {
+                    const segs = 56;
+                    ctx.beginPath();
+                    for (let i = 0; i <= segs; i++) {
+                        const a = (i / segs) * Math.PI * 2;
+                        let x = 0, y = 0, z = 0;
+                        if (g.axis === "xy") { x = Math.cos(a) * g.radius; y = Math.sin(a) * g.radius; }
+                        else if (g.axis === "xz") { x = Math.cos(a) * g.radius; z = Math.sin(a) * g.radius; }
+                        else { y = Math.cos(a) * g.radius; z = Math.sin(a) * g.radius; }
+                        const p = project3D(x, y, z, scaleFactor);
+                        if (i === 0) ctx.moveTo(p.sx, p.sy);
+                        else ctx.lineTo(p.sx, p.sy);
+                    }
+                    ctx.stroke();
+                } else if (g.type === "lobe") {
+                    const p = project3D(g.cx, g.cy, g.cz, scaleFactor);
+                    const rad = Math.max(4, g.radius * p.scale);
+                    ctx.beginPath();
+                    ctx.arc(p.sx, p.sy, rad, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            });
+            ctx.restore();
+        }
+
+        function drawPhotonWave(scaleFactor) {
+            const anim = state.photonAnim;
+            if (!anim) return;
+            anim.progress += 0.018;
+            if (anim.progress >= 1) {
+                state.photonAnim = null;
+                return;
+            }
+            const t = anim.progress;
+            const startX = anim.type === "absorb" ? cw * 0.08 : cw * 0.5;
+            const endX = anim.type === "absorb" ? cw * 0.5 : cw * 0.92;
+            const startY = anim.type === "absorb" ? ch * 0.24 : ch * 0.5;
+            const endY = anim.type === "absorb" ? ch * 0.5 : ch * 0.24;
+
+            const curX = startX + (endX - startX) * t;
+            const curY = startY + (endY - startY) * t;
+            const angle = Math.atan2(endY - startY, endX - startX);
+
+            ctx.save();
+            ctx.translate(curX, curY);
+            ctx.rotate(angle);
+            ctx.strokeStyle = anim.color;
+            ctx.lineWidth = 2.4;
+            ctx.globalAlpha = Math.sin(t * Math.PI);
+            ctx.beginPath();
+            const len = 48;
+            for (let i = -len / 2; i <= len / 2; i += 2) {
+                const env = Math.cos((i / (len / 2)) * (Math.PI / 2));
+                const wy = Math.sin(i * 0.45 - t * 18) * 8 * env;
+                if (i === -len / 2) ctx.moveTo(i, wy);
+                else ctx.lineTo(i, wy);
+            }
+            ctx.stroke();
+
+            // Subtle arrow head
+            ctx.fillStyle = anim.color;
+            ctx.beginPath();
+            ctx.moveTo(len / 2 + 7, 0);
+            ctx.lineTo(len / 2 - 2, -4.5);
+            ctx.lineTo(len / 2 - 2, 4.5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function renderFrame() {
+            if (state.autoRotate && !isDragging) {
+                state.rotY += 0.0055;
+            }
+
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, cw, ch);
+
+            // Responsive base scale so model fits cleanly at 320px through 1440px without clipping
+            const minDim = Math.min(cw, ch);
+            const scaleFactor = (minDim / 350) * state.zoom;
+
+            drawAxes(scaleFactor);
+
+            // Project cloud points (apply cross-section slice if enabled)
+            const backCloud = [];
+            const frontCloud = [];
+            const intensity = state.cloudIntensity;
+
+            for (let i = 0; i < cloudPoints.length; i++) {
+                const pt = cloudPoints[i];
+                // Slice removes front-right octant/hemisphere in local space so interior radial nodes are visible
+                if (state.sliceMode && pt.z > 0 && pt.x > -8) continue;
+                const pr = project3D(pt.x, pt.y, pt.z, scaleFactor);
+                const item = { pr, pt };
+                if (pr.z >= 0) backCloud.push(item);
+                else frontCloud.push(item);
+            }
+
+            // Draw back half of electron cloud
+            for (let i = 0; i < backCloud.length; i++) {
+                const { pr, pt } = backCloud[i];
+                const a = clamp(pt.alpha * intensity * 0.82, 0.06, 0.85);
+                ctx.fillStyle = `rgba(${pt.r}, ${pt.g}, ${pt.b}, ${a.toFixed(3)})`;
+                ctx.beginPath();
+                ctx.arc(pr.sx, pr.sy, Math.max(1.1, pt.size * pr.scale * 0.9), 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Draw 90% boundary guides
+            drawBoundaryGuides(scaleFactor);
+
+            // Draw 3D depth-sorted Nucleus
+            if (nucleusParticles.length > 0) {
+                const nScale = state.nucleusScale;
+                const projectedNucleons = nucleusParticles.map(np => {
+                    const pr = project3D(np.x * nScale, np.y * nScale, np.z * nScale, scaleFactor);
+                    return { pr, type: np.type };
+                });
+                projectedNucleons.sort((a, b) => b.pr.z - a.pr.z);
+
+                const baseSphereR = nucleusParticles.length > 45 ? 4.4 : nucleusParticles.length > 15 ? 5.4 : 6.4;
+                for (let i = 0; i < projectedNucleons.length; i++) {
+                    const { pr, type } = projectedNucleons[i];
+                    const r = Math.max(2.2, baseSphereR * nScale * pr.scale);
+                    const grad = ctx.createRadialGradient(pr.sx - r * 0.32, pr.sy - r * 0.32, r * 0.12, pr.sx, pr.sy, r);
+                    if (type === "p") {
+                        grad.addColorStop(0, "#FF8A80");
+                        grad.addColorStop(0.55, "#E53935");
+                        grad.addColorStop(1, "#9A1B18");
+                    } else {
+                        grad.addColorStop(0, "#80DEEA");
+                        grad.addColorStop(0.55, "#0097A7");
+                        grad.addColorStop(1, "#005662");
+                    }
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(pr.sx, pr.sy, r, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            // Draw front half of electron cloud
+            for (let i = 0; i < frontCloud.length; i++) {
+                const { pr, pt } = frontCloud[i];
+                const a = clamp(pt.alpha * intensity, 0.08, 0.92);
+                ctx.fillStyle = `rgba(${pt.r}, ${pt.g}, ${pt.b}, ${a.toFixed(3)})`;
+                ctx.beginPath();
+                ctx.arc(pr.sx, pr.sy, Math.max(1.2, pt.size * pr.scale), 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Draw photon absorption / emission wave packet if active
+            drawPhotonWave(scaleFactor);
+
+            requestAnimationFrame(renderFrame);
+        }
+
+        // Pointer & Touch Rotation Interaction
+        let isDragging = false;
+        let lastPtrX = 0;
+        let lastPtrY = 0;
+
+        canvas.addEventListener("pointerdown", e => {
+            isDragging = true;
+            lastPtrX = e.clientX;
+            lastPtrY = e.clientY;
+            if (canvas.setPointerCapture) {
+                try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+            }
+        });
+
+        canvas.addEventListener("pointermove", e => {
+            if (!isDragging) return;
+            const dx = e.clientX - lastPtrX;
+            const dy = e.clientY - lastPtrY;
+            lastPtrX = e.clientX;
+            lastPtrY = e.clientY;
+            state.rotY += dx * 0.01;
+            state.rotX = clamp(state.rotX + dy * 0.01, -Math.PI * 0.48, Math.PI * 0.48);
+        });
+
+        function endDrag(e) {
+            if (!isDragging) return;
+            isDragging = false;
+            if (canvas.releasePointerCapture && e && e.pointerId !== undefined) {
+                try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+            }
+        }
+        canvas.addEventListener("pointerup", endDrag);
+        canvas.addEventListener("pointercancel", endDrag);
+
+        // Mouse wheel zoom inside canvas
+        canvas.addEventListener("wheel", e => {
+            e.preventDefault();
+            const delta = e.deltaY < 0 ? 0.1 : -0.1;
+            setZoom(state.zoom + delta);
+        }, { passive: false });
+
+        function setZoom(val) {
+            state.zoom = clamp(Math.round(val * 100) / 100, 0.5, 2.2);
+            document.getElementById("sliderZoom").value = Math.round(state.zoom * 100);
+            document.getElementById("lblZoom").textContent = state.zoom.toFixed(1) + "x";
+        }
+
+        /* =========================================================
+           6. UI Rendering & Real-Time Synchronization
+           ========================================================= */
+        function formatChargeText(q) {
+            if (q === 0) return "";
+            const absQ = Math.abs(q);
+            const sign = q > 0 ? "+" : "−";
+            return (absQ === 1 ? "" : String(absQ)) + sign;
+        }
+
+        function populateElementDropdown(filterText = "") {
+            const select = document.getElementById("elementSelect");
+            const q = filterText.trim().toLowerCase();
+            const prevVal = select.value;
+            select.innerHTML = "";
+
+            const filtered = ELEMENTS.filter(el => {
+                if (!q) return true;
+                return (
+                    String(el.z) === q ||
+                    el.sym.toLowerCase().includes(q) ||
+                    el.en.toLowerCase().includes(q) ||
+                    el.cn.includes(q)
+                );
+            });
+
+            if (filtered.length === 0) {
+                const opt = document.createElement("option");
+                opt.value = "";
+                opt.textContent = "找不到符合的元素，請修改搜尋關鍵字";
+                select.appendChild(opt);
+                return;
+            }
+
+            filtered.forEach(el => {
+                const opt = document.createElement("option");
+                opt.value = String(el.z);
+                opt.textContent = `${el.z}. ${el.cn} ${el.en} (${el.sym})`;
+                select.appendChild(opt);
+            });
+
+            if (filtered.some(el => String(el.z) === String(state.protons))) {
+                select.value = String(state.protons);
+            } else if (prevVal && filtered.some(el => String(el.z) === prevVal)) {
+                select.value = prevVal;
+            }
+        }
+
+        function renderIdentityAndControls(cfg) {
+            const p = state.protons;
+            const n = state.neutrons;
+            const e = state.electrons;
+            const A = p + n;
+            const q = p - e;
+            const el = ELEMENT_MAP.get(p);
+
+            // Sync particle sliders & numeric inputs
+            document.getElementById("sliderP").value = p;
+            document.getElementById("inputP").value = p;
+            document.getElementById("sliderN").value = n;
+            document.getElementById("inputN").value = n;
+            document.getElementById("sliderE").value = e;
+            document.getElementById("inputE").value = e;
+
+            const select = document.getElementById("elementSelect");
+            if (el && Array.from(select.options).some(o => o.value === String(p))) {
+                select.value = String(p);
+            }
+
+            // Metrics
+            document.getElementById("valZ").textContent = p;
+            document.getElementById("valA").textContent = A;
+            document.getElementById("valQ").textContent = q === 0 ? "0" : (q > 0 ? `+${q}` : `${q}`);
+            document.getElementById("valP").textContent = p;
+            document.getElementById("valN").textContent = n;
+            document.getElementById("valE").textContent = e;
+
+            const symMass = document.getElementById("symMass");
+            const symZ = document.getElementById("symZ");
+            const symElement = document.getElementById("symElement");
+            const symCharge = document.getElementById("symCharge");
+            const idNameCn = document.getElementById("idNameCn");
+            const idNameEn = document.getElementById("idNameEn");
+            const idIsotope = document.getElementById("idIsotope");
+            const idTypeBadge = document.getElementById("idTypeBadge");
+            const idChargeBadge = document.getElementById("idChargeBadge");
+            const identityNote = document.getElementById("identityNote");
+            const viewerAtomTitle = document.getElementById("viewerAtomTitle");
+
+            symMass.textContent = A;
+            symZ.textContent = p;
+
+            if (!el) {
+                symElement.textContent = "?";
+                symCharge.textContent = formatChargeText(q);
+                symCharge.style.color = "var(--color-warn)";
+                idNameCn.textContent = "無法對應至週期表元素";
+                idNameEn.textContent = p === 0 ? "No Element (Z = 0)" : `Unsupported Atomic Number (Z = ${p})`;
+                idIsotope.textContent = p === 0
+                    ? (n > 0 && e === 0 ? `目前組成：${n} 顆中子（不含質子，非化學元素）` : "目前不含質子，無法構成任何化學元素")
+                    : "目前質子數超出週期表已知 1～118 號元素範圍";
+                idTypeBadge.className = "status-pill pill-invalid";
+                idTypeBadge.textContent = "非支援元素";
+                idChargeBadge.className = "status-pill pill-invalid mono";
+                idChargeBadge.textContent = `電荷：${q === 0 ? "0" : (q > 0 ? "+" + q : q)}`;
+                identityNote.className = "info-callout warn";
+                identityNote.textContent = "目前質子數（Z = " + p + "）無法對應至週期表 1～118 號元素。請將質子數調回 1～118 或從元素選單重新選取。";
+                viewerAtomTitle.textContent = `未對應元素（Z = ${p}, A = ${A}）`;
+                return;
+            }
+
+            const qStr = formatChargeText(q);
+            symElement.textContent = el.sym;
+            symCharge.textContent = qStr;
+
+            const isNonDefaultIso = (n !== el.defaultN);
+            const inlineNuclide = `${toSup(A)}${toSub(p)}${el.sym}${q !== 0 ? toSup(qStr.replace("−","-")) : ""}`;
+
+            let cnTitle = "";
+            let enTitle = "";
+
+            if (q === 0) {
+                cnTitle = isNonDefaultIso ? `${el.cn}同位素原子` : `${el.cn}原子`;
+                enTitle = `${el.en}-${A} (Neutral Atom)`;
+                symCharge.style.color = "var(--color-success)";
+                idTypeBadge.className = "status-pill pill-neutral";
+                idTypeBadge.textContent = "中性原子 Neutral Atom";
+                idChargeBadge.className = "status-pill pill-neutral mono";
+                idChargeBadge.textContent = "電荷：0";
+            } else if (q > 0) {
+                cnTitle = isNonDefaultIso ? `${el.cn}同位素陽離子` : `${el.cn}離子`;
+                enTitle = `${el.en} ion (Cation, ${el.sym}${toSup(qStr)})`;
+                symCharge.style.color = "var(--color-proton)";
+                idTypeBadge.className = "status-pill pill-cation";
+                idTypeBadge.textContent = "陽離子 Cation";
+                idChargeBadge.className = "status-pill pill-cation mono";
+                idChargeBadge.textContent = `電荷：+${q}`;
+            } else {
+                const anionMeta = ANION_NAMES[p];
+                if (anionMeta && !isNonDefaultIso) {
+                    cnTitle = anionMeta.cn;
+                    enTitle = `${anionMeta.en} (Anion, ${el.sym}${toSup(qStr.replace("−","-"))})`;
+                } else if (anionMeta && isNonDefaultIso) {
+                    cnTitle = `${el.cn}同位素離子（${anionMeta.cn}）`;
+                    enTitle = `${el.en}-${A} ${anionMeta.en}`;
+                } else {
+                    cnTitle = isNonDefaultIso ? `${el.cn}同位素陰離子` : `${el.cn}陰離子`;
+                    enTitle = `${el.en} anion (${el.sym}${toSup(qStr.replace("−","-"))})`;
+                }
+                symCharge.style.color = "var(--accent-blue)";
+                idTypeBadge.className = "status-pill pill-anion";
+                idTypeBadge.textContent = "陰離子 Anion";
+                idChargeBadge.className = "status-pill pill-anion mono";
+                idChargeBadge.textContent = `電荷：${q}`;
+            }
+
+            idNameCn.textContent = cnTitle;
+            idNameEn.textContent = enTitle;
+            idIsotope.textContent = `同位素標記：${el.en}-${A}（${el.cn}-${A}）｜符號：${inlineNuclide}`;
+
+            // Scientific identity explanation
+            const isoStatus = el.isRad
+                ? `此為放射性／人工元素，預設同位素 ${el.en}-${el.defaultA} 參考最長壽命同位素，僅供教學示意。`
+                : isNonDefaultIso
+                    ? `中子數已變更為 ${n}（預設常見穩定同位素為 ${el.defaultN}），元素種類維持「${el.cn}」不變，形成同位素 ${el.en}-${A}。`
+                    : `目前為該元素常見同位素 ${el.en}-${A}（含 ${n} 顆中子）。`;
+
+            const chargeStatus = q === 0
+                ? `質子數與電子數相等（${p} = ${e}），呈電中性。`
+                : q > 0
+                    ? `電子數比質子數少 ${q} 顆（${p} − ${e} = +${q}），失去電子形成帶正電的陽離子。`
+                    : `電子數比質子數多 ${Math.abs(q)} 顆（${p} − ${e} = ${q}），獲得電子形成帶負電的陰離子。`;
+
+            identityNote.className = el.isRad ? "info-callout warn" : "info-callout";
+            identityNote.textContent = `${isoStatus} ${chargeStatus}`;
+
+            viewerAtomTitle.textContent = `${cnTitle} ${el.en}-${A}（${inlineNuclide}）`;
+        }
+
+        function renderOrbitalExplorer() {
+            const n = state.selectedN;
+            const l = state.selectedL;
+            const validLs = ["s"];
+            if (n >= 2) validLs.push("p");
+            if (n >= 3) validLs.push("d");
+            if (n >= 4) validLs.push("f");
+
+            // Enforce quantum rule l < n
+            if (!validLs.includes(state.selectedL)) {
+                state.selectedL = validLs[validLs.length - 1];
+                state.selectedOrient = ORIENTATIONS[state.selectedL][0].id;
+            }
+
+            // Sync n buttons
+            document.querySelectorAll("#nButtonsGroup button").forEach(btn => {
+                const bn = Number(btn.dataset.n);
+                btn.classList.toggle("btn-active", bn === state.selectedN);
+            });
+
+            // Sync l buttons
+            document.querySelectorAll("#lButtonsGroup button").forEach(btn => {
+                const bl = btn.dataset.l;
+                const allowed = validLs.includes(bl);
+                btn.disabled = !allowed;
+                btn.classList.toggle("btn-active", bl === state.selectedL);
+            });
+
+            // Quantum restriction hint
+            const hintEl = document.getElementById("sublevelRuleHint");
+            const invalidDesc =
+                n === 1 ? "n = 1 僅存在 1s 次能階（1p、1d、1f 不存在）。" :
+                n === 2 ? "n = 2 僅存在 2s 與 2p 次能階（2d、2f 不存在）。" :
+                n === 3 ? "n = 3 存在 3s、3p、3d 三個次能階（3f 不存在）。" :
+                "n = 4 完整包含 4s、4p、4d、4f 四個次能階（共 16 個軌域，最多 32 顆電子）。";
+            hintEl.textContent = invalidDesc;
+
+            // Populate orientation buttons
+            const grid = document.getElementById("orientationGrid");
+            grid.innerHTML = "";
+            const opts = ORIENTATIONS[state.selectedL];
+            if (!opts.some(o => o.id === state.selectedOrient)) {
+                state.selectedOrient = opts[0].id;
+            }
+
+            opts.forEach(opt => {
+                const b = document.createElement("button");
+                b.type = "button";
+                b.className = "btn orient-btn" + (opt.id === state.selectedOrient ? " btn-active" : "");
+                b.textContent = `${state.selectedN}${opt.label}`;
+                b.addEventListener("click", () => {
+                    state.selectedOrient = opt.id;
+                    state.viewMode = "orbital";
+                    updateAll(true);
+                });
+                grid.appendChild(b);
+            });
+
+            // Active orbital summary
+            const activeOpt = opts.find(o => o.id === state.selectedOrient) || opts[0];
+            const lIdx = state.selectedL === "s" ? 0 : state.selectedL === "p" ? 1 : state.selectedL === "d" ? 2 : 3;
+            const radialNodes = Math.max(0, state.selectedN - lIdx - 1);
+            const shapeInfo =
+                state.selectedL === "s" ? "球形對稱（Spherical），隨主能階 n 增加尺寸擴大（1s < 2s < 3s < 4s），開啟「剖面觀察」可見內部徑向節面。" :
+                state.selectedL === "p" ? "雙瓣形／啞鈴形（Two-lobed），每個 p 次能階有 3 個彼此垂直的軌域（pₓ, pᵧ, p₂），最多容納 6 顆電子。" :
+                state.selectedL === "d" ? "五種 d 軌域（四個四瓣形＋一個沿 z 軸雙瓣環狀 d₂²），每個 d 次能階最多容納 10 顆電子（課本不要求背誦細節形狀）。" :
+                "七種複雜多瓣形 f 軌域（自 n = 4 開始出現），每個 f 次能階最多容納 14 顆電子（此 3D 圖像為角度波函數教學示意）。";
+
+            document.getElementById("orbitalSummary").innerHTML =
+                `<strong>目前選取軌域：${state.selectedN}${activeOpt.label}</strong>｜主能階 <strong>n = ${state.selectedN}</strong>、徑向節面數：<strong>${radialNodes}</strong>。${shapeInfo}`;
+
+            // Sync viewer mode badge & toggle buttons
+            document.getElementById("btnModeAtom").classList.toggle("btn-active", state.viewMode === "atom");
+            document.getElementById("btnModeOrbital").classList.toggle("btn-active", state.viewMode === "orbital");
+            document.getElementById("viewerModeBadge").textContent =
+                state.viewMode === "atom"
+                    ? "完整原子電子雲"
+                    : `單一軌域 3D：${state.selectedN}${state.selectedOrient}`;
+        }
+
+        function renderConfigurationAndBoxes(cfg) {
+            document.getElementById("configFull").textContent = cfg.fullStr;
+            document.getElementById("configShort").textContent = cfg.shortStr;
+            document.getElementById("viewerConfigChip").textContent = cfg.shortStr;
+
+            // Valence / Core / Magnetism
+            document.getElementById("valValence").textContent = `${cfg.valenceE} e⁻`;
+            document.getElementById("valValenceSub").textContent =
+                cfg.maxN > 0
+                    ? `最高主能階 n = ${cfg.maxN}（${cfg.valenceSubLabels.join(" ")}）`
+                    : "目前無任何電子";
+
+            document.getElementById("valCore").textContent = `${cfg.coreE} e⁻`;
+            document.getElementById("valCoreSub").textContent =
+                cfg.coreE > 0
+                    ? `位於 n < ${cfg.maxN} 內層軌域`
+                    : "無內層電子";
+
+            const magText = state.electrons === 0
+                ? "0 顆（無電子）"
+                : cfg.unpaired > 0
+                    ? `${cfg.unpaired} 顆（順磁性）`
+                    : "0 顆（抗磁性）";
+            const magSub = state.electrons === 0
+                ? "請增加電子觀察自旋排列"
+                : cfg.unpaired > 0
+                    ? "Paramagnetic（含未成對電子，受磁場吸引）"
+                    : "Diamagnetic（所有電子皆成對 ↑↓）";
+            document.getElementById("valMagnet").textContent = magText;
+            document.getElementById("valMagnetSub").textContent = magSub;
+
+            // Scientific accuracy note for configuration
+            const noteEl = document.getElementById("configScienceNote");
+            noteEl.className = "info-callout";
+            if (cfg.noteKind === "cr_cu") {
+                noteEl.textContent = `【課本必考例外】${state.protons === 24 ? "鉻（Cr, Z = 24）" : "銅（Cu, Z = 29）"}不遵循一般 4s²3dⁿ 規則，其實際基態電子組態為 ${cfg.shortStr}（半填滿 3d⁵ 或全填滿 3d¹⁰ 結構更穩定）。`;
+            } else if (cfg.noteKind === "excited") {
+                noteEl.className = "info-callout warn";
+                noteEl.textContent = `【激發態示意 Excited State】1 顆電子吸收外界能量，從 ${cfg.excitedFrom} 躍遷至較高能階的 ${cfg.excitedTo}。激發態不穩定，電子降回基態時將放出對應能階差的光子。`;
+            } else if (cfg.noteKind === "tm_cation") {
+                noteEl.className = "info-callout warn";
+                noteEl.textContent = "【過渡金屬陽離子規則】過渡金屬形成陽離子時，優先移除最外層主能階的 ns 電子，再移除 (n−1)d 電子。註：部分高價離子實際基態可能略有差異，此處為教學近似排列。";
+            } else if (cfg.noteKind === "la_ac" || cfg.noteKind === "heavy_exc") {
+                noteEl.textContent = "【重元素例外組態】已依課本 Zumdahl Fig. 11.34 套用此重元素之實驗基態組態例外。";
+            } else if (cfg.noteKind === "extreme_ion" || cfg.noteKind === "heavy_approx") {
+                noteEl.className = "info-callout warn";
+                noteEl.textContent = "【教學近似標示】目前設定為重元素或高電荷離子，此處依能量最低原理（Aufbau）教學近似排列，部分過渡金屬／高價離子實際基態可能略有差異。";
+            } else if (cfg.noteKind === "over_118") {
+                noteEl.className = "info-callout warn";
+                noteEl.textContent = "【超出 7p 容量上限】電子數超過 118（7p⁶ 已全滿），方框圖僅呈現至 7p⁶（118 顆電子），其餘電子超出本教材討論範圍。";
+            } else {
+                noteEl.textContent = "依課本填入順序 1s → 2s → 2p → 3s → 3p → 4s → 3d → 4p 排列，並嚴格遵守包立不相容原理（同軌域最多 2 顆相反自旋電子 ↑↓）與洪德定則（同能階軌域先平行單獨填入 ↑ ↑ ↑ 再配對）。";
+            }
+
+            // Excited button label sync
+            const exBtn = document.getElementById("btnToggleExcited");
+            if (state.isExcited) {
+                exBtn.textContent = "✨ 放出光子 → 回到基態";
+                exBtn.className = "btn btn-sm btn-primary";
+            } else {
+                exBtn.textContent = "⚡ 吸收能量 → 激發態";
+                exBtn.className = "btn btn-sm btn-warn";
+            }
+
+            // Build Orbital Box Diagram (show up to highest occupied sublevel + 1 empty sublevel for clarity, min 3p)
+            const track = document.getElementById("boxDiagramTrack");
+            track.innerHTML = "";
+
+            let lastOccupiedIdx = 4; // Always show at least 1s..3p (first 18 elements)
+            SUBLEVELS.forEach((sub, idx) => {
+                if (cfg.counts[sub.id] > 0 && idx > lastOccupiedIdx) {
+                    lastOccupiedIdx = idx;
+                }
+            });
+            const showEndIdx = Math.min(SUBLEVELS.length - 1, lastOccupiedIdx + 1);
+
+            for (let i = 0; i <= showEndIdx; i++) {
+                const sub = SUBLEVELS[i];
+                const count = cfg.counts[sub.id];
+                const group = document.createElement("div");
+                group.className = "sublevel-group";
+                if (sub.n === cfg.maxN && count > 0) group.classList.add("is-valence");
+                if (state.isExcited && sub.id === cfg.excitedTo) group.classList.add("is-excited-target");
+
+                const boxesRow = document.createElement("div");
+                boxesRow.className = "sublevel-boxes";
+
+                for (let b = 0; b < sub.boxes; b++) {
+                    const box = document.createElement("div");
+                    box.className = "orbital-box";
+                    const hasUp = count > b;
+                    const hasDown = count > (b + sub.boxes);
+                    if (hasUp) {
+                        box.classList.add("has-e");
+                        const spUp = document.createElement("span");
+                        spUp.className = "spin-up";
+                        spUp.textContent = "↑";
+                        box.appendChild(spUp);
+                    }
+                    if (hasDown) {
+                        const spDn = document.createElement("span");
+                        spDn.className = "spin-down";
+                        spDn.textContent = "↓";
+                        box.appendChild(spDn);
+                    }
+                    boxesRow.appendChild(box);
+                }
+
+                const lbl = document.createElement("div");
+                lbl.className = "sublevel-label";
+                const colMap = { s: "var(--color-s)", p: "var(--color-p)", d: "var(--color-d)", f: "var(--color-f)" };
+                lbl.innerHTML = `<span style="color:${colMap[sub.l]};">${sub.id}${count > 0 ? toSup(count) : ""}</span>`;
+                if (sub.n === cfg.maxN && count > 0) {
+                    const tag = document.createElement("span");
+                    tag.className = "sublevel-tag";
+                    tag.textContent = "價";
+                    lbl.appendChild(tag);
+                }
+
+                group.appendChild(boxesRow);
+                group.appendChild(lbl);
+                track.appendChild(group);
+            }
+        }
+
+        function setPhotonBanner(mode, dotColor, htmlMsg) {
+            const banner = document.getElementById("photonBanner");
+            const dot = document.getElementById("photonDot");
+            const text = document.getElementById("photonText");
+            banner.className = "photon-banner" + (mode ? " " + mode : "");
+            dot.style.backgroundColor = dotColor || "var(--text-tertiary)";
+            text.innerHTML = htmlMsg;
+        }
+
+        function updateAll(rebuild3D = true) {
+            const cfg = computeConfiguration(state.protons, state.electrons, state.isExcited);
+            state.excitedFrom = cfg.excitedFrom;
+            state.excitedTo = cfg.excitedTo;
+
+            renderIdentityAndControls(cfg);
+            renderOrbitalExplorer();
+            renderConfigurationAndBoxes(cfg);
+
+            if (rebuild3D) {
+                rebuildNucleus();
+                rebuildElectronCloud(cfg);
+            }
+        }
+
+        /* =========================================================
+           7. Filling Animation & Excitation Handlers
+           ========================================================= */
+        function stopFillingAnimation() {
+            if (state.fillingTimer) {
+                clearInterval(state.fillingTimer);
+                state.fillingTimer = null;
+            }
+            const btn = document.getElementById("btnPlayFill");
+            btn.textContent = "⏵ 逐一填入電子動畫";
+        }
+
+        function startFillingAnimation() {
+            if (state.fillingTimer) {
+                stopFillingAnimation();
+                return;
+            }
+            const target = state.electrons > 0 ? state.electrons : Math.max(1, state.protons);
+            state.fillingTargetE = target;
+            state.isExcited = false;
+            state.electrons = 0;
+            updateAll(true);
+
+            const btn = document.getElementById("btnPlayFill");
+            btn.textContent = "⏸ 暫停填入動畫";
+
+            const stepDelay = target > 36 ? 110 : target > 18 ? 190 : 320;
+            state.fillingTimer = setInterval(() => {
+                if (state.electrons >= state.fillingTargetE) {
+                    stopFillingAnimation();
+                    return;
+                }
+                state.electrons += 1;
+                updateAll(true);
+            }, stepDelay);
+        }
+
+        function triggerExcitationToggle() {
+            stopFillingAnimation();
+            if (state.electrons < 1) {
+                setPhotonBanner("state-excited", "#F57C00", "<strong>無法激發：</strong>目前電子數為 0，請先增加至少 1 顆電子。");
+                return;
+            }
+            state.isExcited = !state.isExcited;
+            const cfg = computeConfiguration(state.protons, state.electrons, state.isExcited);
+            if (state.isExcited && cfg.excitedFrom && cfg.excitedTo) {
+                state.photonAnim = { type: "absorb", color: "#F57C00", progress: 0 };
+                setPhotonBanner(
+                    "state-excited",
+                    "#F57C00",
+                    `<strong>吸收能量 → 進入激發態（Excited State）：</strong>原子吸收對應能階差 ΔE 的光子，使 1 顆電子由 <strong>${cfg.excitedFrom}</strong> 躍遷至較高能階 <strong>${cfg.excitedTo}</strong>（能量升高，狀態較不穩定）。`
+                );
+            } else {
+                state.isExcited = false;
+                state.photonAnim = { type: "emit", color: "#0071E3", progress: 0 };
+                setPhotonBanner(
+                    "state-emit",
+                    "#0071E3",
+                    `<strong>放出光子 → 回到基態（Ground State）：</strong>電子由較高能階降回最低可用能階，以<strong>光子（Photon）</strong>形式釋放等於兩能階差 ΔE 的能量。`
+                );
+            }
+            updateAll(true);
+        }
+
+        function triggerSpecificTransition(title, photonColor, msgHtml, p, n, e, excitedFlag, animType) {
+            stopFillingAnimation();
+            state.protons = p;
+            state.neutrons = n;
+            state.electrons = e;
+            state.isExcited = excitedFlag;
+            state.viewMode = "atom";
+            state.photonAnim = { type: animType, color: photonColor, progress: 0 };
+            setPhotonBanner(animType === "absorb" ? "state-excited" : "state-emit", photonColor, `<strong>${title}：</strong>${msgHtml}`);
+            updateAll(true);
+        }
+
+        /* =========================================================
+           8. Six Interactive Teaching Labs
+           ========================================================= */
+        const LABS_CONFIG = {
+            1: {
+                title: "實驗 1：質子數決定元素身分（Atomic Number Z）",
+                desc: "依據現代原子理論，原子核內的質子數（原子序 Z）唯一決定該原子屬於哪一種元素。點擊下方按鈕觀察質子數從 1 變到 17 時，元素名稱、符號、原子核與電子雲如何同步演變。",
+                groups: [
+                    {
+                        label: "點擊切換不同質子數的中性原子：",
+                        buttons: [
+                            { text: "Z=1 氫 (¹₁H)", fn: () => loadAtom(1, 0, 1, "atom") },
+                            { text: "Z=2 氦 (⁴₂He)", fn: () => loadAtom(2, 2, 2, "atom") },
+                            { text: "Z=6 碳 (¹²₆C)", fn: () => loadAtom(6, 6, 6, "atom") },
+                            { text: "Z=7 氮 (¹⁴₇N)", fn: () => loadAtom(7, 7, 7, "atom") },
+                            { text: "Z=8 氧 (¹⁶₈O)", fn: () => loadAtom(8, 8, 8, "atom") },
+                            { text: "Z=11 鈉 (²³₁₁Na)", fn: () => loadAtom(11, 12, 11, "atom") },
+                            { text: "Z=17 氯 (³⁵₁₇Cl)", fn: () => loadAtom(17, 18, 17, "atom") }
+                        ]
+                    }
+                ]
+            },
+            2: {
+                title: "實驗 2：中子數與同位素（Isotopes）",
+                desc: "同一元素的所有原子都具有相同的質子數（Z），但中子數可以不同，形成不同質量數（A = Z + N）的同位素。觀察下方按鈕：改變中子數時，元素符號與化學性質（電子組態）完全不變，只有質量數與原子核改變。",
+                groups: [
+                    {
+                        label: "碳同位素（Z = 6 固定，中子數 6 / 7 / 8）：",
+                        buttons: [
+                            { text: "¹²₆C（碳-12，6n）", fn: () => loadAtom(6, 6, 6, "atom") },
+                            { text: "¹³₆C（碳-13，7n）", fn: () => loadAtom(6, 7, 6, "atom") },
+                            { text: "¹⁴₆C（碳-14，8n，放射定年）", fn: () => loadAtom(6, 8, 6, "atom") }
+                        ]
+                    },
+                    {
+                        label: "氧與鈉同位素比較：",
+                        buttons: [
+                            { text: "¹⁶₈O（氧-16，8n）", fn: () => loadAtom(8, 8, 8, "atom") },
+                            { text: "¹⁷₈O（氧-17，9n）", fn: () => loadAtom(8, 9, 8, "atom") },
+                            { text: "¹⁸₈O（氧-18，10n）", fn: () => loadAtom(8, 10, 8, "atom") },
+                            { text: "²³₁₁Na（鈉-23，12n）", fn: () => loadAtom(11, 12, 11, "atom") },
+                            { text: "²⁴₁₁Na（鈉-24，13n）", fn: () => loadAtom(11, 13, 11, "atom") }
+                        ]
+                    }
+                ]
+            },
+            3: {
+                title: "實驗 3：電子轉移與陰陽離子形成（Cations & Anions）",
+                desc: "金屬傾向失去價電子形成帶正電的陽離子（Cation），非金屬傾向獲得電子形成帶負電的陰離子（Anion），以達到類似惰性氣體的穩定組態（如 [Ne] 1s² 2s² 2p⁶）。離子形成絕不改變原子核內的質子數！",
+                groups: [
+                    {
+                        label: "金屬失電子形成陽離子（觀察 3s 價電子移除）：",
+                        buttons: [
+                            { text: "Na 中性原子 (11e⁻)", fn: () => loadAtom(11, 12, 11, "atom") },
+                            { text: "Na⁺ 鈉離子 (10e⁻, [Ne])", fn: () => loadAtom(11, 12, 10, "atom") },
+                            { text: "Mg 中性原子 (12e⁻)", fn: () => loadAtom(12, 12, 12, "atom") },
+                            { text: "Mg²⁺ 鎂離子 (10e⁻, [Ne])", fn: () => loadAtom(12, 12, 10, "atom") }
+                        ]
+                    },
+                    {
+                        label: "非金屬得電子形成陰離子（觀察 p 軌域填滿）：",
+                        buttons: [
+                            { text: "O 中性原子 (8e⁻)", fn: () => loadAtom(8, 8, 8, "atom") },
+                            { text: "O²⁻ 氧離子 (10e⁻, [Ne])", fn: () => loadAtom(8, 8, 10, "atom") },
+                            { text: "Cl 中性原子 (17e⁻)", fn: () => loadAtom(17, 18, 17, "atom") },
+                            { text: "Cl⁻ 氯離子 (18e⁻, [Ar])", fn: () => loadAtom(17, 18, 18, "atom") }
+                        ]
+                    }
+                ]
+            },
+            4: {
+                title: "實驗 4：s、p、d、f 軌域三維空間形狀探索",
+                desc: "主能階 n 決定軌域大小與能量，次能階（s, p, d, f）決定軌域的空間機率形狀。點擊下方按鈕可直接切換至「單一軌域 3D 形狀」模式；切換至 2s / 3s 剖面可清楚觀察電子出現機率為零的球形徑向節面（Radial Nodes）。",
+                groups: [
+                    {
+                        label: "s 軌域（球形與徑向節面）：",
+                        buttons: [
+                            { text: "1s 球形軌域", fn: () => loadOrbital(1, "s", "s", false) },
+                            { text: "2s 剖面（1 個徑向節面）", fn: () => loadOrbital(2, "s", "s", true) },
+                            { text: "3s 剖面（2 個徑向節面）", fn: () => loadOrbital(3, "s", "s", true) }
+                        ]
+                    },
+                    {
+                        label: "p、d、f 多瓣形軌域（拖曳 3D 畫布旋轉觀察）：",
+                        buttons: [
+                            { text: "2pₓ 雙瓣形", fn: () => loadOrbital(2, "p", "px", false) },
+                            { text: "2pᵧ 雙瓣形", fn: () => loadOrbital(2, "p", "py", false) },
+                            { text: "2p₂ 雙瓣形", fn: () => loadOrbital(2, "p", "pz", false) },
+                            { text: "3dₓ²₋ᵧ² 四瓣形", fn: () => loadOrbital(3, "d", "dx2y2", false) },
+                            { text: "3d₂² 雙瓣＋環狀", fn: () => loadOrbital(3, "d", "dz2", false) },
+                            { text: "4fₓᵧ₂ 八瓣示意", fn: () => loadOrbital(4, "f", "fxyz", false) }
+                        ]
+                    }
+                ]
+            },
+            5: {
+                title: "實驗 5：電子組態、洪德定則與 Cr / Cu 例外",
+                desc: "透過 C (2p²)、N (2p³)、O (2p⁴) 觀察洪德定則（同能階軌域先平行單獨填入再配對）；透過 K (4s¹)、Cr (4s¹3d⁵)、Cu (4s¹3d¹⁰) 驗證 4s 先於 3d 填入及課本必考的過渡金屬組態例外。",
+                groups: [
+                    {
+                        label: "2p 軌域洪德定則（Hund's Rule）與未成對電子：",
+                        buttons: [
+                            { text: "C (2p²：↑ ↑ 2未成對)", fn: () => loadAtom(6, 6, 6, "atom") },
+                            { text: "N (2p³：↑ ↑ ↑ 3未成對)", fn: () => loadAtom(7, 7, 7, "atom") },
+                            { text: "O (2p⁴：↑↓ ↑ ↑ 開始配對)", fn: () => loadAtom(8, 8, 8, "atom") },
+                            { text: "Ne (2p⁶：全成對 抗磁性)", fn: () => loadAtom(10, 10, 10, "atom") }
+                        ]
+                    },
+                    {
+                        label: "4s 先於 3d 填入與過渡金屬例外：",
+                        buttons: [
+                            { text: "K (Z=19：[Ar] 4s¹)", fn: () => loadAtom(19, 20, 19, "atom") },
+                            { text: "Cr (Z=24：[Ar] 4s¹ 3d⁵ 例外)", fn: () => loadAtom(24, 28, 24, "atom") },
+                            { text: "Cu (Z=29：[Ar] 4s¹ 3d¹⁰ 例外)", fn: () => loadAtom(29, 34, 29, "atom") },
+                            { text: "⏵ 以目前元素播放逐一填入動畫", fn: () => startFillingAnimation(), primary: true }
+                        ]
+                    }
+                ]
+            },
+            6: {
+                title: "實驗 6：基態、激發態、氫原子光譜與焰色試驗",
+                desc: "原子的能階是量子化的（Quantized）。電子吸收特定能量進入激發態，返回較低能階時會放出能量等於能階差 ΔE 的特定波長光子（波長越短，光子能量越高）。以下展示課本 11.3～11.4 節的氫原子可見明線光譜與金屬鹽焰色反應（定性說明，不虛構未經證實之數值）。",
+                groups: [
+                    {
+                        label: "氫原子（H）可見光發射光譜（課本 Fig. 11.10 四條明線，由低能至高能）：",
+                        buttons: [
+                            {
+                                text: "656 nm 紅光 (能階差最小)",
+                                dot: "#E53935",
+                                fn: () => triggerSpecificTransition(
+                                    "氫原子放出 656 nm 紅光光子",
+                                    "#E53935",
+                                    "激發態氫原子由較高能階降回較低能階（n=3 → n=2 巴耳末系），能階差相對較小，放出波長較長（656 nm）、能量較低的紅光光子。",
+                                    1, 0, 1, false, "emit"
+                                )
+                            },
+                            {
+                                text: "486 nm 青藍光",
+                                dot: "#00ACC1",
+                                fn: () => triggerSpecificTransition(
+                                    "氫原子放出 486 nm 青藍光光子",
+                                    "#00ACC1",
+                                    "激發態氫原子經歷較大的能階下降（n=4 → n=2），放出波長 486 nm、能量高於紅光的青藍光光子。",
+                                    1, 0, 1, false, "emit"
+                                )
+                            },
+                            {
+                                text: "434 nm 藍紫光",
+                                dot: "#3949AB",
+                                fn: () => triggerSpecificTransition(
+                                    "氫原子放出 434 nm 藍紫光光子",
+                                    "#3949AB",
+                                    "激發態氫原子經歷更大的能階差（n=5 → n=2），放出波長較短（434 nm）、光子能量更高的藍紫光。",
+                                    1, 0, 1, false, "emit"
+                                )
+                            },
+                            {
+                                text: "410 nm 紫光 (能階差最大)",
+                                dot: "#7B1FA2",
+                                fn: () => triggerSpecificTransition(
+                                    "氫原子放出 410 nm 紫光光子",
+                                    "#7B1FA2",
+                                    "在課本 Fig. 11.10 可見光四條明線中，410 nm 紫光波長最短，代表對應的能階躍遷能量差最大（n=6 → n=2）。",
+                                    1, 0, 1, false, "emit"
+                                )
+                            }
+                        ]
+                    },
+                    {
+                        label: "課本 11.3 節火焰測試（Flame Test）與通用激發切換：",
+                        buttons: [
+                            {
+                                text: "Li⁺ 焰色：深紅色 (Deep red)",
+                                dot: "#D32F2F",
+                                fn: () => triggerSpecificTransition(
+                                    "鋰火焰測試（Li⁺ → 深紅光）",
+                                    "#D32F2F",
+                                    "受火焰熱能激發的鋰原子回到較低能階時，能量差對應波長較長的深紅色光子（課本 Fig. 11.7）。",
+                                    3, 4, 3, false, "emit"
+                                )
+                            },
+                            {
+                                text: "Na⁺ 焰色：黃橙色 (Yellow-orange)",
+                                dot: "#FB8C00",
+                                fn: () => triggerSpecificTransition(
+                                    "鈉火焰測試（Na⁺ → 黃橙光）",
+                                    "#FB8C00",
+                                    "受激發的鈉原子回到較低能階時，放出特徵黃橙色光子（與停車場鈉蒸氣燈發光原理相同）。",
+                                    11, 12, 11, false, "emit"
+                                )
+                            },
+                            {
+                                text: "Cu²⁺ 焰色：綠色 (Green)",
+                                dot: "#2E7D32",
+                                fn: () => triggerSpecificTransition(
+                                    "銅火焰測試（Cu²⁺ → 綠光）",
+                                    "#2E7D32",
+                                    "受激發的銅原子經歷比鋰更大的能階差，放出波長較短、能量較高的綠色光子。",
+                                    29, 34, 29, false, "emit"
+                                )
+                            },
+                            {
+                                text: "⚡ 切換目前原子之基態／激發態",
+                                fn: () => triggerExcitationToggle(),
+                                primary: true
+                            }
+                        ]
+                    }
+                ]
+            }
+        };
+
+        function loadAtom(p, n, e, mode) {
+            stopFillingAnimation();
+            state.protons = p;
+            state.neutrons = n;
+            state.electrons = e;
+            state.isExcited = false;
+            if (mode) state.viewMode = mode;
+            setPhotonBanner("", "var(--text-tertiary)", "<strong>基態（Ground State）：</strong>所有電子位於可用最低能量軌域。可點擊「吸收能量 → 激發態」或切換至實驗 6 觀察光子躍遷。");
+            updateAll(true);
+        }
+
+        function loadOrbital(n, l, orient, slice) {
+            stopFillingAnimation();
+            state.selectedN = n;
+            state.selectedL = l;
+            state.selectedOrient = orient;
+            state.viewMode = "orbital";
+            state.sliceMode = !!slice;
+            syncToggleButtons();
+            updateAll(true);
+        }
+
+        function renderActiveLab() {
+            const lab = LABS_CONFIG[state.activeLab];
+            const panel = document.getElementById("labContentPanel");
+            panel.innerHTML = "";
+
+            const h = document.createElement("h3");
+            h.className = "lab-panel-title";
+            h.textContent = lab.title;
+
+            const desc = document.createElement("p");
+            desc.className = "lab-panel-desc";
+            desc.textContent = lab.desc;
+
+            panel.appendChild(h);
+            panel.appendChild(desc);
+
+            lab.groups.forEach(g => {
+                const sec = document.createElement("div");
+                sec.className = "lab-action-section";
+
+                const lbl = document.createElement("div");
+                lbl.className = "lab-action-label";
+                lbl.textContent = g.label;
+
+                const row = document.createElement("div");
+                row.className = "btn-group";
+
+                g.buttons.forEach(item => {
+                    const b = document.createElement("button");
+                    b.type = "button";
+                    b.className = item.primary ? "btn btn-sm btn-primary" : "btn btn-sm";
+                    if (item.dot) {
+                        const sw = document.createElement("span");
+                        sw.className = "spectrum-swatch";
+                        sw.style.backgroundColor = item.dot;
+                        b.appendChild(sw);
+                    }
+                    const tx = document.createElement("span");
+                    tx.textContent = item.text;
+                    b.appendChild(tx);
+                    b.addEventListener("click", item.fn);
+                    row.appendChild(b);
+                });
+
+                sec.appendChild(lbl);
+                sec.appendChild(row);
+                panel.appendChild(sec);
+            });
+
+            document.querySelectorAll("#labsTabs .lab-tab").forEach(tab => {
+                const active = Number(tab.dataset.lab) === state.activeLab;
+                tab.classList.toggle("active", active);
+                tab.setAttribute("aria-selected", active ? "true" : "false");
+            });
+        }
+
+        function syncToggleButtons() {
+            const bBound = document.getElementById("btnToggleBoundary");
+            bBound.classList.toggle("btn-active", state.showBoundary);
+            bBound.textContent = state.showBoundary ? "✓ 90% 機率邊界" : "90% 機率邊界";
+
+            const bSlice = document.getElementById("btnToggleSlice");
+            bSlice.classList.toggle("btn-active", state.sliceMode);
+            bSlice.textContent = state.sliceMode ? "✓ 剖面觀察 (開)" : "◐ 剖面觀察";
+
+            const bRot = document.getElementById("btnToggleRotate");
+            bRot.classList.toggle("btn-active", state.autoRotate);
+            bRot.textContent = state.autoRotate ? "↻ 自動旋轉 (開)" : "↻ 自動旋轉 (關)";
+        }
+
+        /* =========================================================
+           9. Wire All DOM Events Cleanly
+           ========================================================= */
+        function bindEvents() {
+            // Reset all to default (Oxygen-16)
+            document.getElementById("btnResetAll").addEventListener("click", () => {
+                stopFillingAnimation();
+                state.protons = 8;
+                state.neutrons = 8;
+                state.electrons = 8;
+                state.viewMode = "atom";
+                state.selectedN = 2;
+                state.selectedL = "p";
+                state.selectedOrient = "px";
+                state.cloudIntensity = 0.75;
+                state.zoom = 1.0;
+                state.nucleusScale = 1.0;
+                state.showBoundary = true;
+                state.sliceMode = false;
+                state.autoRotate = true;
+                state.rotX = 0.34;
+                state.rotY = -0.52;
+                state.isExcited = false;
+                state.photonAnim = null;
+
+                document.getElementById("elementSearch").value = "";
+                populateElementDropdown("");
+                document.getElementById("sliderCloud").value = 75;
+                document.getElementById("lblCloud").textContent = "75%";
+                document.getElementById("sliderZoom").value = 100;
+                document.getElementById("lblZoom").textContent = "1.0x";
+                document.getElementById("sliderNucleus").value = 100;
+                document.getElementById("lblNucleus").textContent = "1.0x";
+                syncToggleButtons();
+                setPhotonBanner("", "var(--text-tertiary)", "<strong>基態（Ground State）：</strong>已恢復為預設氧原子 ¹⁶₈O。可調整粒子或切換實驗觀察變化。");
+                updateAll(true);
+            });
+
+            // Quick presets bar
+            document.querySelectorAll("#quickPresetsGroup button").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const [p, n, e] = btn.dataset.preset.split(",").map(Number);
+                    loadAtom(p, n, e, "atom");
+                });
+            });
+
+            // Element search & dropdown
+            document.getElementById("elementSearch").addEventListener("input", e => {
+                populateElementDropdown(e.target.value);
+            });
+
+            document.getElementById("elementSelect").addEventListener("change", e => {
+                const z = Number(e.target.value);
+                const el = ELEMENT_MAP.get(z);
+                if (!el) return;
+                loadAtom(el.z, el.defaultN, el.z, "atom");
+            });
+
+            // Sliders & number inputs for Protons, Neutrons, Electrons
+            function setParticle(kind, rawVal) {
+                stopFillingAnimation();
+                const val = Number(rawVal);
+                if (Number.isNaN(val)) return;
+                state.isExcited = false;
+                if (kind === "p") state.protons = clamp(Math.round(val), 0, 118);
+                if (kind === "n") state.neutrons = clamp(Math.round(val), 0, 180);
+                if (kind === "e") state.electrons = clamp(Math.round(val), 0, 120);
+                updateAll(true);
+            }
+
+            document.getElementById("sliderP").addEventListener("input", e => setParticle("p", e.target.value));
+            document.getElementById("inputP").addEventListener("change", e => setParticle("p", e.target.value));
+            document.getElementById("sliderN").addEventListener("input", e => setParticle("n", e.target.value));
+            document.getElementById("inputN").addEventListener("change", e => setParticle("n", e.target.value));
+            document.getElementById("sliderE").addEventListener("input", e => setParticle("e", e.target.value));
+            document.getElementById("inputE").addEventListener("change", e => setParticle("e", e.target.value));
+
+            document.querySelectorAll(".step-btn").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const [kind, deltaStr] = btn.dataset.step.split(":");
+                    const delta = Number(deltaStr);
+                    const cur = kind === "p" ? state.protons : kind === "n" ? state.neutrons : state.electrons;
+                    setParticle(kind, cur + delta);
+                });
+            });
+
+            document.getElementById("btnStdIso").addEventListener("click", () => {
+                const el = ELEMENT_MAP.get(state.protons);
+                if (!el) return;
+                setParticle("n", el.defaultN);
+            });
+
+            document.getElementById("btnMakeNeutral").addEventListener("click", () => {
+                setParticle("e", state.protons);
+            });
+
+            // 3D Viewer controls
+            document.getElementById("btnModeAtom").addEventListener("click", () => {
+                state.viewMode = "atom";
+                updateAll(true);
+            });
+            document.getElementById("btnModeOrbital").addEventListener("click", () => {
+                state.viewMode = "orbital";
+                updateAll(true);
+            });
+            document.getElementById("btnToggleBoundary").addEventListener("click", () => {
+                state.showBoundary = !state.showBoundary;
+                syncToggleButtons();
+            });
+            document.getElementById("btnToggleSlice").addEventListener("click", () => {
+                state.sliceMode = !state.sliceMode;
+                syncToggleButtons();
+            });
+            document.getElementById("btnToggleRotate").addEventListener("click", () => {
+                state.autoRotate = !state.autoRotate;
+                syncToggleButtons();
+            });
+            document.getElementById("btnZoomIn").addEventListener("click", () => setZoom(state.zoom + 0.15));
+            document.getElementById("btnZoomOut").addEventListener("click", () => setZoom(state.zoom - 0.15));
+            document.getElementById("btnResetView").addEventListener("click", () => {
+                state.rotX = 0.34;
+                state.rotY = -0.52;
+                setZoom(1.0);
+            });
+
+            // Visual sliders
+            document.getElementById("sliderCloud").addEventListener("input", e => {
+                const v = Number(e.target.value);
+                state.cloudIntensity = v / 100;
+                document.getElementById("lblCloud").textContent = v + "%";
+            });
+            document.getElementById("sliderZoom").addEventListener("input", e => {
+                setZoom(Number(e.target.value) / 100);
+            });
+            document.getElementById("sliderNucleus").addEventListener("input", e => {
+                const v = Number(e.target.value) / 100;
+                state.nucleusScale = v;
+                document.getElementById("lblNucleus").textContent = v.toFixed(1) + "x";
+            });
+
+            // Orbital n & l buttons
+            document.querySelectorAll("#nButtonsGroup button").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    state.selectedN = Number(btn.dataset.n);
+                    state.viewMode = "orbital";
+                    updateAll(true);
+                });
+            });
+            document.querySelectorAll("#lButtonsGroup button").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    if (btn.disabled) return;
+                    state.selectedL = btn.dataset.l;
+                    state.selectedOrient = ORIENTATIONS[state.selectedL][0].id;
+                    state.viewMode = "orbital";
+                    updateAll(true);
+                });
+            });
+
+            // Filling animation & Excitation controls
+            document.getElementById("btnStepDownE").addEventListener("click", () => {
+                setParticle("e", state.electrons - 1);
+            });
+            document.getElementById("btnStepUpE").addEventListener("click", () => {
+                setParticle("e", state.electrons + 1);
+            });
+            document.getElementById("btnPlayFill").addEventListener("click", startFillingAnimation);
+            document.getElementById("btnStopFill").addEventListener("click", () => {
+                stopFillingAnimation();
+                if (state.electrons === 0 && state.protons > 0) {
+                    state.electrons = state.protons;
+                }
+                updateAll(true);
+            });
+            document.getElementById("btnToggleExcited").addEventListener("click", triggerExcitationToggle);
+
+            // Teaching Labs tabs
+            document.querySelectorAll("#labsTabs .lab-tab").forEach(tab => {
+                tab.addEventListener("click", () => {
+                    state.activeLab = Number(tab.dataset.lab);
+                    renderActiveLab();
+                });
+            });
+        }
+
+        /* =========================================================
+           10. Initialization
+           ========================================================= */
+        function init() {
+            populateElementDropdown("");
+            bindEvents();
+            syncToggleButtons();
+            renderActiveLab();
+            resizeCanvas();
+            updateAll(true);
+            requestAnimationFrame(renderFrame);
+        }
+
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", init);
+        } else {
+            init();
+        }
+    })();
+    </script>
+</body>
+</html>
